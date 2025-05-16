@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/RelacionamentoStatusPage.dart';
 import 'dart:io';
 
-class RelacionamentoPage extends StatelessWidget {
+class RelacionamentoPage extends StatefulWidget {
   final String userImageUrl;
   final String partnerImageUrl;
 
-  RelacionamentoPage({
+  const RelacionamentoPage({
     required this.userImageUrl,
     required this.partnerImageUrl,
+    super.key,
   });
+
+  @override
+  _RelacionamentoPageState createState() => _RelacionamentoPageState();
+}
+
+class _RelacionamentoPageState extends State<RelacionamentoPage> {
+  DateTime? dataInicioRelacionamento;
 
   final TextEditingController tempoController = TextEditingController();
   final TextEditingController historiaController = TextEditingController();
@@ -18,108 +26,190 @@ class RelacionamentoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFE6F0),
+      backgroundColor: const Color(0xFFFFE6F0), // Fundo rosa claro
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFA0B0), // Rosa escuro
+        title: const Text(
+          'Ties of Love',
+          style: TextStyle(
+            fontFamily: 'DancingScript',
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
           children: [
-            // Imagem do usuário
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: userImageUrl.isNotEmpty
-                  ? NetworkImage(userImageUrl)
-                  : AssetImage('assets/images/default_avatar.png')
-                      as ImageProvider,
+            // Imagens do usuário e parceiro(a)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: widget.userImageUrl.isNotEmpty
+                      ? NetworkImage(widget.userImageUrl)
+                      : const AssetImage('assets/images/default_avatar.png')
+                          as ImageProvider,
+                ),
+                const SizedBox(width: 16),
+                const Icon(
+                  Icons.favorite,
+                  color: Color(0xFFFF5C75),
+                  size: 32,
+                ),
+                const SizedBox(width: 16),
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: widget.partnerImageUrl.isNotEmpty
+                      ? NetworkImage(widget.partnerImageUrl)
+                      : const AssetImage('assets/images/default_avatar.png')
+                          as ImageProvider,
+                ),
+              ],
             ),
-            SizedBox(height: 12),
-            // Icone da aliança
-            Icon(
-              Icons.favorite, // Pode trocar por um ícone de aliança se quiser adicionar
-              color: Colors.pink[300],
-              size: 32,
-            ),
-            SizedBox(height: 12),
-            // Imagem do parceiro(a)
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: partnerImageUrl.isNotEmpty
-                  ? NetworkImage(partnerImageUrl)
-                  : AssetImage('assets/images/default_avatar.png')
-                      as ImageProvider,
-            ),
-            SizedBox(height: 24),
-            // Perguntas
-            Text(
-              'Tempo de Relacionamento',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            SizedBox(height: 8),
-            TextField(
-              controller: tempoController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20)),
+            const SizedBox(height: 30),
+            // Data de início do relacionamento
+            const Text(
+              'Data de Início do Relacionamento',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Como vocês se conheceram?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                final DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime.now(),
+                );
+
+                if (pickedDate != null) {
+                  setState(() {
+                    dataInicioRelacionamento = pickedDate;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Text(
+                  dataInicioRelacionamento != null
+                      ? '${dataInicioRelacionamento!.day}/${dataInicioRelacionamento!.month}/${dataInicioRelacionamento!.year}'
+                      : 'Selecionar data',
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 30),
+            // História do casal
+            const Text(
+              'Como vocês se conheceram?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: historiaController,
-              maxLines: 2,
+              maxLines: 3,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 20,
+                ),
               ),
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 30),
+            // Apelido carinhoso
+            const Text(
               'Apelido carinhoso que usam entre si',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 10),
             TextField(
               controller: apelidoController,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 20,
+                ),
               ),
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 40),
             // Botão Confirmar
             ElevatedButton(
               onPressed: () {
+                int diasRelacionamento = 0;
+                if (dataInicioRelacionamento != null) {
+                  final hoje = DateTime.now();
+                  diasRelacionamento =
+                      hoje.difference(dataInicioRelacionamento!).inDays;
+                }
+
                 Navigator.push(
                   context,
-                MaterialPageRoute(
-                  builder: (context) => RelacionamentoStatusPage(
-                    userImage: userImageUrl.isNotEmpty ? File(userImageUrl) : null,
-                    userName: 'Você',
-                    partnerImage: partnerImageUrl.isNotEmpty ? null : null, // ou algum path se quiser
-                    partnerName: 'Parceria',
-                    relationshipDays: int.tryParse(tempoController.text) ?? 0,
+                  MaterialPageRoute(
+                    builder: (context) => RelacionamentoStatusPage(
+                      userImage: widget.userImageUrl.isNotEmpty
+                          ? File(widget.userImageUrl)
+                          : null,
+                      userName: 'Você',
+                      partnerImage: widget.partnerImageUrl.isNotEmpty
+                          ? File(widget.partnerImageUrl)
+                          : null,
+                      partnerName: 'Parceria',
+                      relationshipDays: diasRelacionamento,
+                    ),
                   ),
-                ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink[300],
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                backgroundColor: const Color(0xFFFF5C75), // Rosa escuro
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 5,
               ),
-              child: Text(
+              child: const Text(
                 'Confirmar',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

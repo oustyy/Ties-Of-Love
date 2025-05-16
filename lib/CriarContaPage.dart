@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 
 class CriarContaPage extends StatefulWidget {
+  const CriarContaPage({super.key});
+
   @override
   _CriarContaPageState createState() => _CriarContaPageState();
 }

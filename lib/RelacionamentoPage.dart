@@ -28,19 +28,15 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFE6F0), // Fundo rosa claro
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFA0B0), // Rosa escuro
-        title: const Text(
-          'Ties of Love',
-          style: TextStyle(
-            fontFamily: 'DancingScript',
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        backgroundColor: const Color(0xFFFFCAC2), // Rosa escuro
+        title: Image.asset(
+          'assets/images/logo.jpg', // Aqui fica sua logo no lugar do texto
+          height: 100,
         ),
         centerTitle: true,
         elevation: 0,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
@@ -51,24 +47,22 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: widget.userImageUrl.isNotEmpty
-                      ? NetworkImage(widget.userImageUrl)
-                      : const AssetImage('assets/images/default_avatar.png')
-                          as ImageProvider,
+                  backgroundImage:
+                      widget.userImageUrl.isNotEmpty
+                          ? NetworkImage(widget.userImageUrl)
+                          : const AssetImage('assets/images/default_avatar.png')
+                              as ImageProvider,
                 ),
                 const SizedBox(width: 16),
-                const Icon(
-                  Icons.favorite,
-                  color: Color(0xFFFF5C75),
-                  size: 32,
-                ),
+                const Icon(Icons.favorite, color: Color(0xFFFF5C75), size: 32),
                 const SizedBox(width: 16),
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: widget.partnerImageUrl.isNotEmpty
-                      ? NetworkImage(widget.partnerImageUrl)
-                      : const AssetImage('assets/images/default_avatar.png')
-                          as ImageProvider,
+                  backgroundImage:
+                      widget.partnerImageUrl.isNotEmpty
+                          ? NetworkImage(widget.partnerImageUrl)
+                          : const AssetImage('assets/images/default_avatar.png')
+                              as ImageProvider,
                 ),
               ],
             ),
@@ -100,7 +94,10 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(30),
@@ -181,23 +178,29 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RelacionamentoStatusPage(
-                      userImage: widget.userImageUrl.isNotEmpty
-                          ? File(widget.userImageUrl)
-                          : null,
-                      userName: 'Você',
-                      partnerImage: widget.partnerImageUrl.isNotEmpty
-                          ? File(widget.partnerImageUrl)
-                          : null,
-                      partnerName: 'Parceria',
-                      relationshipDays: diasRelacionamento,
-                    ),
+                    builder:
+                        (context) => RelacionamentoStatusPage(
+                          userImage:
+                              widget.userImageUrl.isNotEmpty
+                                  ? File(widget.userImageUrl)
+                                  : null,
+                          userName: 'Você',
+                          partnerImage:
+                              widget.partnerImageUrl.isNotEmpty
+                                  ? File(widget.partnerImageUrl)
+                                  : null,
+                          partnerName: 'Parceria',
+                          relationshipDays: diasRelacionamento,
+                        ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF5C75), // Rosa escuro
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),

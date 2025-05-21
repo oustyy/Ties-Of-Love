@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/UserCodePage.dart';
 import 'package:flutter_application_1/CriarContaPage.dart';
 
-void main() {
-  runApp(const TiesOfLoveApp());
-}
-
 class TiesOfLoveApp extends StatelessWidget {
   const TiesOfLoveApp({super.key});
 
@@ -27,28 +23,34 @@ class LoginPage extends StatelessWidget {
       backgroundColor: const Color(0xFFFFE6F0), // Fundo rosa claro
       body: Column(
         children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            color: const Color(0xFFFFA0B0), // Rosa mais escuro
-            child: const Center(
-              child: Text(
-                'Ties of Love',
-                style: TextStyle(
-                  fontFamily: 'DancingScript', // Usando uma fonte mais elegante
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          // Header com bordas arredondadas
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(40),
+              bottomRight: Radius.circular(40),
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              color: const Color(0xFFFFCAC2),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/logo.jpg',
+                  height: 80,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
           ),
+
           // Conteúdo
           Expanded(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 20,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -106,7 +108,7 @@ class LoginPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5C75), // Rosa escuro
+                        backgroundColor: const Color(0xFFFF5C75),
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -130,13 +132,13 @@ class LoginPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => CriarContaPage(),
-                          ), 
+                          ),
                         );
                       },
-                      child: Text(
+                      child: const Text(
                         'Criar conta',
                         style: TextStyle(
-                          color: const Color(0xFFFF5C75),
+                          color: Color(0xFFFF5C75),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           decoration: TextDecoration.underline,

@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   image_picker: ^1.0.0
   http: ^1.1.0
+  flutter_speed_dial: ^7.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -95,4 +96,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-

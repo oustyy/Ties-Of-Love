@@ -153,8 +153,8 @@ Contribuições são bem-vindas! Siga os passos abaixo para contribuir:
 
 Se você tiver dúvidas ou sugestões, entre em contato:
 
-- **Email**: seu.email@example.com
-- **GitHub**: [seu-usuario](https://github.com/seu-usuario)
+- **Email**: ckzinho@example.com
+- **GitHub**: 
 
 ---
 

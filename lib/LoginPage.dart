@@ -40,11 +40,11 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/login'), // Substitua pelo IP correto
+        Uri.parse('http://localhost:8080/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
-          'senha': password, // Ajustado para corresponder ao backend
+          'senha': password,
         }),
       );
 
@@ -52,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       print("${response.body}");
 
       final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && responseData['success'] == true) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const UserCodePage()),

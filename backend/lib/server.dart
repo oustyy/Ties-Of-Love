@@ -20,7 +20,7 @@ void main() async {
 
   // Criar tabela se não existir
   await db.query('''
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS usuarios (
       id SERIAL PRIMARY KEY,
       nome TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
@@ -75,7 +75,7 @@ void main() async {
     }
   });
 
-  // Endpoint de login (sem alterações por enquanto)
+  // Endpoint de login
   router.post('/login', (Request request) async {
     final body = await request.readAsString();
     final data = jsonDecode(body);
@@ -93,12 +93,21 @@ void main() async {
       );
 
       if (result.isNotEmpty) {
-        return Response.ok('Login realizado com sucesso');
+        return Response.ok(
+          jsonEncode({'success': true, 'message': 'Login realizado com sucesso'}),
+          headers: {'Content-Type': 'application/json'},
+        );
       } else {
-        return Response.forbidden('Email ou senha inválidos');
+        return Response.forbidden(
+          jsonEncode({'success': false, 'message': 'Email ou senha inválidos'}),
+          headers: {'Content-Type': 'application/json'},
+        );
       }
     } catch (e) {
-      return Response.internalServerError(body: 'Erro no login: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'success': false, 'message': 'Erro no login: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
   });
 

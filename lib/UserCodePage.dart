@@ -1,109 +1,121 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flutter_application_1/RelacionamentoPage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_application_1/AguardandoConfirmacaoPage.dart';
+import 'dart:typed_data';
 
 class UserCodePage extends StatefulWidget {
-  const UserCodePage({super.key});
+  final String userCode;
+
+  const UserCodePage({super.key, required this.userCode});
 
   @override
   State<UserCodePage> createState() => _UserCodePageState();
 }
 
 class _UserCodePageState extends State<UserCodePage> {
-  File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
   bool _obscureUserCode = true;
   bool _obscurePartnerCode = true;
 
-  final TextEditingController _userCodeController = TextEditingController();
   final TextEditingController _partnerCodeController = TextEditingController();
 
-  final String _partnerCodePredefinido = "AMOR123";
-  final String _partnerImagePath = 'assets/images/partner_avatar.png';
+  Future<void> _verifyPartnerCode() async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_code': widget.userCode,
+          'partner_code': _partnerCodeController.text.trim(),
+        }),
+      );
 
-  @override
-  void initState() {
-    super.initState();
-    _userCodeController.text = _generateUserCode();
-  }
+      print("Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
-  String _generateUserCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    Random rand = Random();
-    return String.fromCharCodes(
-      List.generate(7, (_) => chars.codeUnitAt(rand.nextInt(chars.length))),
-    );
-  }
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao conectar ao servidor: ${response.statusCode}');
+      }
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (response.body.isEmpty) {
+        throw Exception('Resposta do servidor está vazia');
+      }
 
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      final responseData = jsonDecode(response.body);
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Resposta do servidor não é um JSON válido');
+      }
+
+      if (responseData['success'] == true) {
+        _showConfirmDialog(responseData['foto_url'] as String? ?? '');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Erro ao verificar código')),
+        );
+      }
+    } catch (e) {
+      print('Erro ao verificar código do parceiro: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao verificar código: $e')),
+      );
     }
   }
 
-  void _showConfirmDialog() {
-    ImageProvider partnerImage = const AssetImage(
-      'assets/images/default_avatar.png',
-    );
-
-    if (_partnerCodeController.text.trim() == _partnerCodePredefinido) {
-      partnerImage = AssetImage(_partnerImagePath);
+  void _showConfirmDialog(String partnerFotoBase64) {
+    ImageProvider partnerImage;
+    if (partnerFotoBase64.isNotEmpty) {
+      try {
+        final bytes = base64Decode(partnerFotoBase64);
+        partnerImage = MemoryImage(bytes);
+      } catch (e) {
+        print('Erro ao decodificar base64: $e');
+        partnerImage = const AssetImage('assets/images/default_avatar.png');
+      }
+    } else {
+      partnerImage = const AssetImage('assets/images/default_avatar.png');
     }
 
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: const Color(0xFFFFE6F0),
-            title: const Text(
-              'Confirma seu parceiro(a)?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFFE6F0),
+        title: const Text(
+          'Confirma seu parceiro(a)?',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(radius: 40, backgroundImage: partnerImage),
+            const SizedBox(height: 12),
+            Text('Código: ${_partnerCodeController.text}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.pink),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(radius: 40, backgroundImage: partnerImage),
-                const SizedBox(height: 12),
-                Text('Código: ${_partnerCodeController.text}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(color: Colors.pink),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => RelacionamentoPage(
-                            userImageUrl: _imageFile?.path ?? '',
-                            partnerImageUrl:
-                                _partnerCodeController.text ==
-                                        _partnerCodePredefinido
-                                    ? _partnerImagePath
-                                    : '',
-                          ),
-                    ),
-                  );
-                },
-                child: const Text('Sim', style: TextStyle(color: Colors.pink)),
-              ),
-            ],
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AguardandoConfirmacaoPage(
+                    userCode: widget.userCode,
+                    partnerCode: _partnerCodeController.text.trim(),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Sim', style: TextStyle(color: Colors.pink)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -113,7 +125,6 @@ class _UserCodePageState extends State<UserCodePage> {
       backgroundColor: const Color(0xFFFFE6F0),
       body: Column(
         children: [
-          // Topo arredondado
           ClipRRect(
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(40),
@@ -142,25 +153,6 @@ class _UserCodePageState extends State<UserCodePage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.white,
-                          backgroundImage:
-                              _imageFile != null
-                                  ? FileImage(_imageFile!)
-                                  : null,
-                          child:
-                              _imageFile == null
-                                  ? const Icon(
-                                    Icons.add_a_photo,
-                                    size: 32,
-                                    color: Colors.pink,
-                                  )
-                                  : null,
-                        ),
-                      ),
                       const SizedBox(height: 30),
                       const Text(
                         'Código de Usuário',
@@ -171,7 +163,7 @@ class _UserCodePageState extends State<UserCodePage> {
                       ),
                       const SizedBox(height: 10),
                       TextField(
-                        controller: _userCodeController,
+                        controller: TextEditingController(text: widget.userCode),
                         obscureText: _obscureUserCode,
                         readOnly: true,
                         decoration: InputDecoration(
@@ -242,7 +234,11 @@ class _UserCodePageState extends State<UserCodePage> {
                       ElevatedButton(
                         onPressed: () {
                           if (_partnerCodeController.text.isNotEmpty) {
-                            _showConfirmDialog();
+                            _verifyPartnerCode();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Por favor, insira o código do parceiro')),
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(

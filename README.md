@@ -92,43 +92,43 @@ Com uma interface em tons de rosa suave e um design intuitivo, o aplicativo é p
 
 ```
 TIES-OF-LOVE/
-├── .dart_tool/               # Arquivos gerados pelo Dart
-├── .vscode/                  # Configurações do VS Code
-├── android/                  # Configurações para Android
-├── assets/                   # Recursos como imagens
-│   └── images/               # Imagens do app (ex.: logo.jpg, imagem_quests.png)
-├── backend/                  # Backend do projeto
-│   ├── .dart_tool/           # Arquivos gerados pelo Dart no backend
-│   ├── config/               # Configurações do backend
-│   ├── models/               # Modelos de dados
-│   ├── routes/               # Rotas do servidor
-│   ├── services/             # Serviços do backend
-│   ├── server.dart           # Arquivo principal do servidor
-│   ├── pubspec.lock          # Dependências bloqueadas do backend
-│   └── pubspec.yaml          # Configuração das dependências do backend
-├── build/                    # Arquivos de build gerados
-├── ios/                      # Configurações para iOS
-├── lib/                      # Código do aplicativo Flutter
-│   ├── AguardandoConfirmacaoPage.dart  # Tela de espera para confirmação
-│   ├── CriarContaPage.dart             # Tela de cadastro
-│   ├── LoginPage.dart                  # Tela de login
-│   ├── main.dart                       # Ponto de entrada do app
-│   ├── RelacionamentoPage.dart         # Tela de detalhes do relacionamento
-│   ├── RelacionamentoStatusPage.dart   # Tela principal com desafios
-│   ├── TelaLoad.dart                   # Tela de carregamento
-│   └── UserCodePage.dart               # Tela de códigos de vínculo
-├── linux/                    # Configurações para Linux
-├── macos/                    # Configurações para macOS
-├── test/                     # Testes do projeto
-├── web/                      # Configurações para web
-├── windows/                  # Configurações para Windows
-├── .flutter-plugins          # Plugins Flutter
-├── .flutter-plugins-dependencies # Dependências dos plugins
-├── .gitignore                # Arquivos ignorados pelo Git
-├── .metadata                 # Metadados do projeto
-├── analysis_options.yaml     # Configurações de análise estática
-├── pubspec.lock              # Dependências bloqueadas do app
-└── pubspec.yaml              # Configuração das dependências do app
+├── .dart_tool/               
+├── .vscode/                 
+├── android/                  
+├── assets/                 
+│   └── images/               
+├── backend/                
+│   ├── .dart_tool/           
+│   ├── config/               
+│   ├── models/               
+│   ├── routes/               
+│   ├── services/            
+│   ├── server.dart           
+│   ├── pubspec.lock          
+│   └── pubspec.yaml          
+├── build/                    
+├── ios/                      
+├── lib/                      
+│   ├── AguardandoConfirmacaoPage.dart  
+│   ├── CriarContaPage.dart             
+│   ├── LoginPage.dart                  
+│   ├── main.dart                       
+│   ├── RelacionamentoPage.dart         
+│   ├── RelacionamentoStatusPage.dart   
+│   ├── TelaLoad.dart                   
+│   └── UserCodePage.dart               
+├── linux/                    
+├── macos/                    
+├── test/                     
+├── web/                      
+├── windows/                  
+├── .flutter-plugins          
+├── .flutter-plugins-dependencies 
+├── .gitignore               
+├── .metadata                 
+├── analysis_options.yaml     
+├── pubspec.lock              
+└── pubspec.yaml              
 ```
 
 ---
@@ -139,14 +139,14 @@ Este projeto foi criado por:
 
 | Nome                   | Papel           | GitHub                                                                  |
 |------------------------|-----------------|-------------------------------------------------------------------------|
-| [oustyy]               | Developer       | [github.com/oustyy](https://github.com/oustyy)                          |
-| [kauack14]             | Developer       | [github.com/kauack14](https://github.com/kauack14)                      |
-| [ViniciusMenezes-dev]  | Developer       | [github.com/ViniciusMenezes-dev](https://github.com/ViniciusMenezes-dev)|
-| [Jhenrique8]           | Developer       | [github.com/Jhenrique8](https://github.com/Jhenrique8)                  |
-| [Kakanosh]             | Developer       | [github.com/Kakanosh](https://github.com/Kakanosh)                      |
-| [GustavoSousa-dev]     | Developer       | [github.com/GustavoSousa-dev](https://github.com/GustavoSousa-dev)      |
-| [GabbSilva]            | Developer       | [github.com/GabbSilva](https://github.com/GabbSilva)                    |
-| [NicollyAlcantara]     | Developer       | [github.com/NicollyAlcantara](https://github.com/NicollyAlcantara)      |
+| oustyy                 | Developer       | [github.com/oustyy](https://github.com/oustyy)                          |
+| kauack14               | Developer       | [github.com/kauack14](https://github.com/kauack14)                      |
+| ViniciusMenezes-dev    | Developer       | [github.com/ViniciusMenezes-dev](https://github.com/ViniciusMenezes-dev)|
+| Jhenrique8             | Developer       | [github.com/Jhenrique8](https://github.com/Jhenrique8)                  |
+| Kakanosh               | Developer       | [github.com/Kakanosh](https://github.com/Kakanosh)                      |
+| GustavoSousa-dev       | Developer       | [github.com/GustavoSousa-dev](https://github.com/GustavoSousa-dev)      |
+| GabbSilva              | Developer       | [github.com/GabbSilva](https://github.com/GabbSilva)                    |
+| NicollyAlcantara       | Developer       | [github.com/NicollyAlcantara](https://github.com/NicollyAlcantara)      |
 
 
 ---

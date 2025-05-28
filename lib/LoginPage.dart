@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/UserCodePage.dart';
+import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:flutter_application_1/CriarContaPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -48,23 +49,41 @@ class _LoginPageState extends State<LoginPage> {
         }),
       );
 
-      print("testanto login!!${response.statusCode}");
-      print("${response.body}");
+      print("Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
       final responseData = jsonDecode(response.body);
       if (response.statusCode == 200 && responseData['success'] == true) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const UserCodePage()),
-        );
+        final userCode = responseData['codigo_usuario'] as String? ?? '';
+        final statusVinculo = responseData['status_vinculo'] as String? ?? 'livre';
+
+        if (statusVinculo == 'vinculado') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RelacionamentoPage(
+                userImageUrl: '',
+                partnerImageUrl: '',
+              ),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserCodePage(userCode: userCode),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(responseData['message'] ?? 'Erro ao fazer login')),
         );
       }
     } catch (e) {
+      print("Login error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro de conexão com o servidor: $e')),
+        const SnackBar(content: Text('Erro de conexão com o servidor')),
       );
     }
   }

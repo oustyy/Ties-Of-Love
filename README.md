@@ -1,161 +1,152 @@
 
 ## 📖 Sobre o Projeto
 
-### 🎯 Funcionalidades
+## ✨ Visão Geral
 
-- **Cadastro e Login**: Os usuários podem criar uma conta e fazer login com email e senha.
-- **Perfil do Relacionamento**: Adicione informações como a data de início do relacionamento, história do casal e apelidos.
-- **Tarefas Românticas**: Acompanhe o progresso de tarefas como "Tenha um jantar romântico" ou "Surpreenda com um presente".
-- **Design Atraente**: Interface com tema romântico, cores suaves (rosa claro e escuro) e animações interativas.
-- **Integração com Backend**: Conexão com um servidor Dart que armazena os dados no PostgreSQL.
+**Ties of Love** é um aplicativo para casais que desejam acompanhar sua jornada de amor. Ele permite que os usuários:
+- Criem uma conta e conectem-se com seu parceiro usando códigos únicos. 🔗
+- Registrem a data de início do relacionamento e acompanhem os dias juntos. 📅
+- Compartilhem histórias e apelidos carinhosos. 💬
+- Participem de desafios românticos para manter a chama acesa! 🎁
 
-## 🚀 Como Começar
+Com uma interface em tons de rosa suave e um design intuitivo, o aplicativo é perfeito para casais que querem celebrar cada momento juntos. 💕
+
+---
+
+## 🚀 Funcionalidades
+
+- **Autenticação Segura**: Cadastro e login com email e senha. 🔒
+- **Vínculo de Parceiros**: Conecte-se ao seu parceiro usando códigos únicos gerados automaticamente. 💑
+- **Acompanhamento de Relacionamento**: Registre a data de início e veja quantos dias vocês estão juntos. ⏳
+- **Histórias e Apelidos**: Compartilhe como vocês se conheceram e os apelidos carinhosos que usam. 📖
+- **Desafios Românticos**: Complete tarefas como "Jantar Romântico" ou "Presente Surpresa" para ganhar pontos e manter a conexão viva. 🌟
+- **Verificação Automática**: Quando ambos os parceiros confirmam o vínculo, o app redireciona automaticamente para a tela de relacionamento. 🔄
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+| Tecnologia        | Descrição                          |
+|-------------------|------------------------------------|
+| **Flutter**       | Framework para a interface do app. 🌐 |
+| **Dart**          | Linguagem para o front-end e back-end. 🛠️ |
+| **PostgreSQL**    | Banco de dados relacional. 🗄️ |
+| **Shelf**         | Framework para criar o servidor Dart. 🌍 |
+| **HTTP**          | Comunicação entre o app e o servidor. 📡 |
+
+---
+
+## 📦 Como Executar o Projeto
 
 ### Pré-requisitos
+- [Flutter](https://flutter.dev/docs/get-started/install) instalado.
+- [Dart](https://dart.dev/get-dart) instalado.
+- [PostgreSQL](https://www.postgresql.org/download/) instalado e configurado.
+- Um editor como [VS Code](https://code.visualstudio.com/) ou [Android Studio](https://developer.android.com/studio).
 
-- [Flutter](https://flutter.dev/docs/get-started/install) (versão 3.x ou superior)
-- [Dart](https://dart.dev/get-dart) (versão 3.x ou superior)
-- [PostgreSQL](https://www.postgresql.org/download/) (versão 12 ou superior)
-- Um editor de código como [VS Code](https://code.visualstudio.com/) ou [Android Studio](https://developer.android.com/studio)
+### Passos para Configuração
 
-### Instalação
-
-1. **Clone o Repositório**:
+1. **Clone o Repositório**  
    ```bash
    git clone https://github.com/seu-usuario/ties-of-love.git
    cd ties-of-love
    ```
 
-2. **Instale as Dependências do Flutter**:
-   Certifique-se de que você está na pasta do projeto e execute:
+2. **Instale as Dependências do Flutter**  
+   Dentro da pasta do projeto, execute:
    ```bash
    flutter pub get
    ```
 
-3. **Configure o Banco de Dados PostgreSQL**:
-   - Crie um banco de dados chamado `ties_of_love`:
-     ```sql
-     CREATE DATABASE ties_of_love;
-     ```
-   - Atualize as credenciais no arquivo `server.dart` com o seu usuário e senha do PostgreSQL:
+3. **Configure o Banco de Dados PostgreSQL**  
+   - Crie um banco de dados chamado `ties_of_love`.
+   - Atualize as credenciais no arquivo `server.dart` (usuário e senha do PostgreSQL):
      ```dart
      final db = PostgreSQLConnection(
        'localhost',
        5432,
        'ties_of_love',
-       username: 'postgres', // Substitua pelo seu usuário
-       password: '123',      // Substitua pela sua senha
+       username: 'postgres',
+       password: 'sua-senha',
      );
      ```
+   - O script de criação da tabela `usuarios` já está no `server.dart` e será executado automaticamente.
 
-4. **Inicie o Backend**:
-   - Navegue até a pasta onde está o arquivo `server.dart` e execute:
-     ```bash
-     dart run server.dart
-     ```
-   - Você verá a mensagem `Server running on localhost:8080` se tudo estiver correto.
+4. **Inicie o Servidor**  
+   Na pasta do projeto, execute:
+   ```bash
+   dart server.dart
+   ```
+   O servidor estará rodando em `http://localhost:8080`.
 
-5. **Atualize o IP no Frontend**:
-   - Nos arquivos `CriarContaPage.dart` e `LoginPage.dart`, substitua o IP pelo endereço IP da sua máquina (por exemplo, `192.168.1.5`):
-     ```dart
-     Uri.parse('http://192.168.1.5:8080/cadastrar')
-     Uri.parse('http://192.168.1.5:8080/login')
-     ```
-   - Para encontrar o IP da sua máquina:
-     - Windows: Execute `ipconfig` no terminal e procure o "IPv4 Address".
-     - Linux/Mac: Execute `ifconfig` ou `ip addr` e procure o endereço IP.
-
-6. **Execute o App**:
-   - Conecte um dispositivo ou inicie um emulador.
-   - Execute o comando:
-     ```bash
-     flutter run
-     ```
-
-## 📱 Como Usar
-
-1. **Tela Inicial**:
-   - Ao abrir o app, você verá a tela de boas-vindas com o botão "Iniciar".
-   - Clique em "Iniciar" para ir para a tela de login.
-
-2. **Criar Conta**:
-   - Clique em "Criar conta" na tela de login.
-   - Preencha os campos (nome, email, senha, confirmar senha) e clique em "Criar Conta".
-   - Você será redirecionado para a tela de login.
-
-3. **Fazer Login**:
-   - Insira o email e a senha que você cadastrou.
-   - Clique em "Confirmar" para acessar a próxima tela.
-
-4. **Configurar o Relacionamento**:
-   - Após o login, você será levado à tela de código de usuário.
-   - Insira o código do(a) parceiro(a) (use `AMOR123` para testar) e confirme.
-   - Preencha os detalhes do relacionamento, como data de início e história do casal.
-
-5. **Acompanhar Tarefas**:
-   - Na tela de status do relacionamento, você verá quantos dias estão juntos e poderá acompanhar tarefas românticas.
-   - Clique no botão flutuante (ícone de coração) para expandir a lista de tarefas e marcar o progresso.
-
-## 🛠️ Tecnologias Utilizadas
-
-### Frontend
-- **Flutter**: Framework para construção de interfaces nativas.
-- **Dart**: Linguagem de programação usada pelo Flutter.
-- **image_picker**: Pacote para selecionar imagens da galeria.
-- **http**: Pacote para fazer requisições HTTP ao backend.
-
-### Backend
-- **Dart**: Usado para criar o servidor com o framework Shelf.
-- **Shelf**: Framework para construir APIs em Dart.
-- **postgres**: Pacote para integração com PostgreSQL.
-- **PostgreSQL**: Banco de dados relacional para armazenar os dados dos usuários.
-
-## 📂 Estrutura do Projeto
-
-```
-ties-of-love/
-├── assets/
-│   ├── images/
-│   │   ├── logo.jpg
-│   │   ├── coracao.png
-│   │   ├── default_avatar.png
-│   │   └── partner_avatar.png
-├── lib/
-│   ├── CriarContaPage.dart
-│   ├── LoginPage.dart
-│   ├── main.dart
-│   ├── RelacionamentoPage.dart
-│   ├── RelacionamentoStatusPage.dart
-│   ├── TelaLoad.dart
-│   ├── UserCodePage.dart
-├── server.dart
-├── pubspec.yaml
-└── README.md
-```
-
-## ⚠️ Notas Importantes
-
-- **Segurança**: Atualmente, as senhas são armazenadas como texto puro no banco de dados. Em um ambiente de produção, é altamente recomendado usar um mecanismo de hash (como `bcrypt`) para proteger as senhas.
-- **Firewall**: Certifique-se de que a porta 8080 está liberada no firewall da sua máquina para que o frontend possa se comunicar com o backend.
-- **Testes**: O código do parceiro(a) padrão para testes é `AMOR123`. Você pode ajustá-lo no arquivo `UserCodePage.dart`.
-
-## 🤝 Contribuições
-
-Contribuições são bem-vindas! Siga os passos abaixo para contribuir:
-
-1. Faça um fork do repositório.
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`).
-3. Commit suas alterações (`git commit -m 'Adiciona nova funcionalidade'`).
-4. Faça o push para a branch (`git push origin feature/nova-funcionalidade`).
-5. Abra um Pull Request.
-
-## 📧 Contato
-
-Se você tiver dúvidas ou sugestões, entre em contato:
-
-- **Email**: ckzinho@example.com
-- **GitHub**: 
+5. **Execute o Aplicativo**  
+   Certifique-se de que o servidor está rodando e, em outro terminal, execute:
+   ```bash
+   flutter run -d chrome
+   ```
+   O app será aberto no Google Chrome.
 
 ---
 
-Feito com 💖 para casais apaixonados!
+## 🌟 Estrutura do Projeto
+
+```
+TIES-OF-LOVE/
+├── .dart_tool/               # Arquivos gerados pelo Dart
+├── .vscode/                  # Configurações do VS Code
+├── android/                  # Configurações para Android
+├── assets/                   # Recursos como imagens
+│   └── images/               # Imagens do app (ex.: logo.jpg, imagem_quests.png)
+├── backend/                  # Backend do projeto
+│   ├── .dart_tool/           # Arquivos gerados pelo Dart no backend
+│   ├── config/               # Configurações do backend
+│   ├── models/               # Modelos de dados
+│   ├── routes/               # Rotas do servidor
+│   ├── services/             # Serviços do backend
+│   ├── server.dart           # Arquivo principal do servidor
+│   ├── pubspec.lock          # Dependências bloqueadas do backend
+│   └── pubspec.yaml          # Configuração das dependências do backend
+├── build/                    # Arquivos de build gerados
+├── ios/                      # Configurações para iOS
+├── lib/                      # Código do aplicativo Flutter
+│   ├── AguardandoConfirmacaoPage.dart  # Tela de espera para confirmação
+│   ├── CriarContaPage.dart             # Tela de cadastro
+│   ├── LoginPage.dart                  # Tela de login
+│   ├── main.dart                       # Ponto de entrada do app
+│   ├── RelacionamentoPage.dart         # Tela de detalhes do relacionamento
+│   ├── RelacionamentoStatusPage.dart   # Tela principal com desafios
+│   ├── TelaLoad.dart                   # Tela de carregamento
+│   └── UserCodePage.dart               # Tela de códigos de vínculo
+├── linux/                    # Configurações para Linux
+├── macos/                    # Configurações para macOS
+├── test/                     # Testes do projeto
+├── web/                      # Configurações para web
+├── windows/                  # Configurações para Windows
+├── .flutter-plugins          # Plugins Flutter
+├── .flutter-plugins-dependencies # Dependências dos plugins
+├── .gitignore                # Arquivos ignorados pelo Git
+├── .metadata                 # Metadados do projeto
+├── analysis_options.yaml     # Configurações de análise estática
+├── pubspec.lock              # Dependências bloqueadas do app
+└── pubspec.yaml              # Configuração das dependências do app
+```
+
+---
+
+## 👥 Equipe de Desenvolvimento
+
+Este projeto foi criado por:
+
+| Nome                   | Papel           | GitHub                                                                  |
+|------------------------|-----------------|-------------------------------------------------------------------------|
+| [oustyy]               | Developer       | [github.com/oustyy](https://github.com/oustyy)                          |
+| [kauack14]             | Developer       | [github.com/kauack14](https://github.com/kauack14)                      |
+| [ViniciusMenezes-dev]  | Developer       | [github.com/ViniciusMenezes-dev](https://github.com/ViniciusMenezes-dev)|
+| [Jhenrique8]           | Developer       | [github.com/Jhenrique8](https://github.com/Jhenrique8)                  |
+| [Kakanosh]             | Developer       | [github.com/Kakanosh](https://github.com/Kakanosh)                      |
+| [GustavoSousa-dev]     | Developer       | [github.com/GustavoSousa-dev](https://github.com/GustavoSousa-dev)      |
+| [GabbSilva]            | Developer       | [github.com/GabbSilva](https://github.com/GabbSilva)                    |
+| [NicollyAlcantara]     | Developer       | [github.com/NicollyAlcantara](https://github.com/NicollyAlcantara)      |
+
+
+---

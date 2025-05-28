@@ -41,31 +41,7 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
           children: [
-            // Imagens do usuário e parceiro(a)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage:
-                      widget.userImageUrl.isNotEmpty
-                          ? NetworkImage(widget.userImageUrl)
-                          : const AssetImage('assets/images/default_avatar.png')
-                              as ImageProvider,
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.favorite, color: Color(0xFFFF5C75), size: 32),
-                const SizedBox(width: 16),
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage:
-                      widget.partnerImageUrl.isNotEmpty
-                          ? NetworkImage(widget.partnerImageUrl)
-                          : const AssetImage('assets/images/default_avatar.png')
-                              as ImageProvider,
-                ),
-              ],
-            ),
+           
             const SizedBox(height: 30),
             // Data de início do relacionamento
             const Text(

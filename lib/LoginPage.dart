@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  Future<void> _login() async {
+  Future<void> _loginIKSr() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -56,14 +56,40 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200 && responseData['success'] == true) {
         final userCode = responseData['codigo_usuario'] as String? ?? '';
         final statusVinculo = responseData['status_vinculo'] as String? ?? 'livre';
+        final userFotoUrl = responseData['foto_url'] as String? ?? '';
+
+        String partnerFotoUrl = '';
+
+        // Buscar dados do parceiro vinculado, se existir
+        if (statusVinculo == 'vinculado') {
+          final partnerResponse = await http.post(
+            Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_code': userCode,
+              'partner_code': '', // O backend buscará o partner_code associado
+            }),
+          );
+
+          if (partnerResponse.statusCode == 200) {
+            final partnerData = jsonDecode(partnerResponse.body);
+            if (partnerData['success'] == true) {
+              partnerFotoUrl = partnerData['foto_url'] as String? ?? '';
+            } else {
+              print("Erro ao buscar parceiro: ${partnerData['message']}");
+            }
+          } else {
+            print("Erro na requisição do parceiro: ${partnerResponse.statusCode}");
+          }
+        }
 
         if (statusVinculo == 'vinculado') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => RelacionamentoPage(
-                userImageUrl: '',
-                partnerImageUrl: '',
+                userImageUrl: userFotoUrl,
+                partnerImageUrl: partnerFotoUrl,
               ),
             ),
           );
@@ -71,7 +97,11 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => UserCodePage(userCode: userCode),
+              builder: (context) => UserCodePage(
+                userCode: userCode,
+                email: email,
+                password: password,
+              ),
             ),
           );
         }
@@ -166,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: _login,
+                      onPressed: _loginIKSr,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF5C75),
                         minimumSize: const Size(double.infinity, 50),

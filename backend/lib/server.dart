@@ -93,7 +93,7 @@ void main() async {
       final senha = data['senha'];
       final fotoUrl = data['foto_url'] as String? ?? '';
 
-      print('Dados recebidos - nome: $nome, email: $email, foto_url: ${fotoUrl.substring(0, 50)}...'); // Log para verificar
+      print('Dados recebidos - nome: $nome, email: $email, foto_url: ${fotoUrl.substring(0, 50)}...');
 
       if (nome == null || email == null || senha == null || nome.isEmpty || email.isEmpty || senha.isEmpty) {
         return Response.badRequest(
@@ -203,13 +203,70 @@ void main() async {
       final userCode = data['user_code'];
       final partnerCode = data['partner_code'];
 
-      if (userCode == null || partnerCode == null || userCode.isEmpty || partnerCode.isEmpty) {
+      if (userCode == null || userCode.isEmpty) {
         return Response.badRequest(
-          body: jsonEncode({'success': false, 'message': 'Códigos do usuário e do parceiro são obrigatórios'}),
+          body: jsonEncode({'success': false, 'message': 'Código do usuário é obrigatório'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
+      if (partnerCode == null || partnerCode.isEmpty) {
+        // Buscar o partner_code associado ao user_code
+        final userResult = await db.query(
+          'SELECT codigo_parceiro, status_vinculo FROM usuarios WHERE codigo_usuario = @user_code',
+          substitutionValues: {'user_code': userCode},
+        );
+
+        if (userResult.isEmpty) {
+          return Response.badRequest(
+            body: jsonEncode({'success': false, 'message': 'Usuário não encontrado'}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+
+        final user = userResult.first;
+        final storedPartnerCode = user[0] as String?;
+        final statusVinculo = user[1] as String;
+
+        if (statusVinculo != 'vinculado' || storedPartnerCode == null || storedPartnerCode.isEmpty) {
+          return Response.badRequest(
+            body: jsonEncode({'success': false, 'message': 'Usuário não está vinculado a um parceiro'}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+
+        // Buscar dados do parceiro usando o storedPartnerCode
+        final partnerResult = await db.query(
+          'SELECT * FROM usuarios WHERE codigo_usuario = @partner_code',
+          substitutionValues: {'partner_code': storedPartnerCode},
+        );
+
+        if (partnerResult.isEmpty) {
+          return Response.badRequest(
+            body: jsonEncode({'success': false, 'message': 'Parceiro não encontrado'}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+
+        final partner = partnerResult.first;
+        final partnerData = {
+          'id': partner[0],
+          'status_vinculo': partner[6],
+          'foto_url': partner[7],
+        };
+
+        return Response.ok(
+          jsonEncode({
+            'success': true,
+            'message': 'Parceiro encontrado',
+            'partner_id': partnerData['id'],
+            'foto_url': partnerData['foto_url'],
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Código existente para quando o partner_code é fornecido
       final partnerResult = await db.query(
         'SELECT * FROM usuarios WHERE codigo_usuario = @partner_code',
         substitutionValues: {'partner_code': partnerCode},

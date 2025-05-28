@@ -6,8 +6,15 @@ import 'dart:typed_data';
 
 class UserCodePage extends StatefulWidget {
   final String userCode;
+  final String email;
+  final String password;
 
-  const UserCodePage({super.key, required this.userCode});
+  const UserCodePage({
+    super.key,
+    required this.userCode,
+    required this.email,
+    required this.password,
+  });
 
   @override
   State<UserCodePage> createState() => _UserCodePageState();
@@ -108,6 +115,8 @@ class _UserCodePageState extends State<UserCodePage> {
                   builder: (context) => AguardandoConfirmacaoPage(
                     userCode: widget.userCode,
                     partnerCode: _partnerCodeController.text.trim(),
+                    email: widget.email,
+                    password: widget.password,
                   ),
                 ),
               );

@@ -1,25 +1,25 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class RelacionamentoStatusPage extends StatefulWidget {
-  final File? userImage;
+  final String userFotoUrl;
   final String userName;
-  final File? partnerImage;
+  final String partnerFotoUrl;
   final String partnerName;
   final int relationshipDays;
 
   const RelacionamentoStatusPage({
     super.key,
-    this.userImage,
+    required this.userFotoUrl,
     required this.userName,
-    this.partnerImage,
+    required this.partnerFotoUrl,
     required this.partnerName,
     required this.relationshipDays,
   });
 
   @override
-  State<RelacionamentoStatusPage> createState() =>
-      _RelacionamentoStatusPageState();
+  State<RelacionamentoStatusPage> createState() => _RelacionamentoStatusPageState();
 }
 
 class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
@@ -162,7 +162,6 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   }
 
   Map<String, dynamic> _generateNewTask() {
-    // simular vinda de backend
     List<Map<String, dynamic>> novas = [
       {"emoji": "🌹", "title": "Mandar mensagem fofa", "progress": 0, "goal": 1},
       {"emoji": "🎶", "title": "Ouvir música juntos", "progress": 0, "goal": 1},
@@ -208,10 +207,13 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundImage: widget.userImage != null
-                                ? FileImage(widget.userImage!)
+                            backgroundImage: widget.userFotoUrl.isNotEmpty
+                                ? MemoryImage(base64Decode(widget.userFotoUrl))
                                 : null,
                             backgroundColor: Colors.white,
+                            child: widget.userFotoUrl.isEmpty
+                                ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                : null,
                           ),
                           const SizedBox(width: 16),
                           const Icon(Icons.favorite,
@@ -219,10 +221,13 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                           const SizedBox(width: 16),
                           CircleAvatar(
                             radius: 50,
-                            backgroundImage: widget.partnerImage != null
-                                ? FileImage(widget.partnerImage!)
+                            backgroundImage: widget.partnerFotoUrl.isNotEmpty
+                                ? MemoryImage(base64Decode(widget.partnerFotoUrl))
                                 : null,
                             backgroundColor: Colors.white,
+                            child: widget.partnerFotoUrl.isEmpty
+                                ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                : null,
                           ),
                         ],
                       ),

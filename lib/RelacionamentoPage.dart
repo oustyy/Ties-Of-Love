@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/RelacionamentoStatusPage.dart';
-import 'dart:io';
 
 class RelacionamentoPage extends StatefulWidget {
   final String userImageUrl;
@@ -41,7 +40,6 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
           children: [
-           
             const SizedBox(height: 30),
             // Data de início do relacionamento
             const Text(
@@ -154,20 +152,13 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) => RelacionamentoStatusPage(
-                          userImage:
-                              widget.userImageUrl.isNotEmpty
-                                  ? File(widget.userImageUrl)
-                                  : null,
-                          userName: 'Você',
-                          partnerImage:
-                              widget.partnerImageUrl.isNotEmpty
-                                  ? File(widget.partnerImageUrl)
-                                  : null,
-                          partnerName: 'Parceria',
-                          relationshipDays: diasRelacionamento,
-                        ),
+                    builder: (context) => RelacionamentoStatusPage(
+                      userFotoUrl: widget.userImageUrl,
+                      userName: 'Você',
+                      partnerFotoUrl: widget.partnerImageUrl,
+                      partnerName: 'Parceria',
+                      relationshipDays: diasRelacionamento,
+                    ),
                   ),
                 );
               },

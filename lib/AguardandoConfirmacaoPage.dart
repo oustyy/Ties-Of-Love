@@ -7,11 +7,15 @@ import 'package:flutter_application_1/RelacionamentoPage.dart';
 class AguardandoConfirmacaoPage extends StatefulWidget {
   final String userCode;
   final String partnerCode;
+  final String email;
+  final String password;
 
   const AguardandoConfirmacaoPage({
     super.key,
     required this.userCode,
     required this.partnerCode,
+    required this.email,
+    required this.password,
   });
 
   @override
@@ -46,12 +50,49 @@ class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
           setState(() {
             _isLoading = false;
           });
+
+          // Buscar dados do usuário e parceiro após vinculação
+          final userResponse = await http.post(
+            Uri.parse('http://localhost:8080/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': widget.email,
+              'senha': widget.password,
+            }),
+          );
+
+          final partnerResponse = await http.post(
+            Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_code': widget.userCode,
+              'partner_code': '',
+            }),
+          );
+
+          String userFotoUrl = '';
+          String partnerFotoUrl = '';
+
+          if (userResponse.statusCode == 200) {
+            final userData = jsonDecode(userResponse.body);
+            if (userData['success'] == true) {
+              userFotoUrl = userData['foto_url'] as String? ?? '';
+            }
+          }
+
+          if (partnerResponse.statusCode == 200) {
+            final partnerData = jsonDecode(partnerResponse.body);
+            if (partnerData['success'] == true) {
+              partnerFotoUrl = partnerData['foto_url'] as String? ?? '';
+            }
+          }
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => RelacionamentoPage(
-                userImageUrl: '',
-                partnerImageUrl: '',
+                userImageUrl: userFotoUrl,
+                partnerImageUrl: partnerFotoUrl,
               ),
             ),
           );

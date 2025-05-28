@@ -153,7 +153,7 @@ void main() async {
 
     try {
       final result = await db.query(
-        'SELECT * FROM usuarios WHERE email = @email AND senha = @senha',
+        'SELECT id, nome, email, senha, codigo_usuario, codigo_parceiro, status_vinculo, foto_url FROM usuarios WHERE email = @email AND senha = @senha',
         substitutionValues: {
           'email': email,
           'senha': senha,
@@ -163,13 +163,14 @@ void main() async {
       if (result.isNotEmpty) {
         final user = result.first;
         final userData = {
-          'id': user[0],
-          'nome': user[1],
-          'email': user[2],
-          'codigo_usuario': user[4],
-          'status_vinculo': user[6],
-          'foto_url': user[7],
+          'id': user[0] as int,
+          'nome': user[1] as String,
+          'email': user[2] as String,
+          'codigo_usuario': user[4] as String,
+          'status_vinculo': user[6] as String,
+          'foto_url': user[7] as String,
         };
+        print('Login successful - User data: $userData');
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -177,6 +178,8 @@ void main() async {
             'codigo_usuario': userData['codigo_usuario'],
             'status_vinculo': userData['status_vinculo'],
             'foto_url': userData['foto_url'],
+            'nome': userData['nome'],
+            'id': userData['id'],
           }),
           headers: {'Content-Type': 'application/json'},
         );
@@ -237,7 +240,7 @@ void main() async {
 
         // Buscar dados do parceiro usando o storedPartnerCode
         final partnerResult = await db.query(
-          'SELECT * FROM usuarios WHERE codigo_usuario = @partner_code',
+          'SELECT id, nome, foto_url FROM usuarios WHERE codigo_usuario = @partner_code',
           substitutionValues: {'partner_code': storedPartnerCode},
         );
 
@@ -251,15 +254,17 @@ void main() async {
         final partner = partnerResult.first;
         final partnerData = {
           'id': partner[0],
-          'status_vinculo': partner[6],
-          'foto_url': partner[7],
+          'nome': partner[1],
+          'foto_url': partner[2],
         };
 
+        print('Partner data returned: $partnerData'); // Log para depuração
         return Response.ok(
           jsonEncode({
             'success': true,
             'message': 'Parceiro encontrado',
             'partner_id': partnerData['id'],
+            'nome': partnerData['nome'], // Retorna o nome do parceiro
             'foto_url': partnerData['foto_url'],
           }),
           headers: {'Content-Type': 'application/json'},
@@ -268,7 +273,7 @@ void main() async {
 
       // Código existente para quando o partner_code é fornecido
       final partnerResult = await db.query(
-        'SELECT * FROM usuarios WHERE codigo_usuario = @partner_code',
+        'SELECT id, nome, foto_url FROM usuarios WHERE codigo_usuario = @partner_code',
         substitutionValues: {'partner_code': partnerCode},
       );
 
@@ -282,8 +287,8 @@ void main() async {
       final partner = partnerResult.first;
       final partnerData = {
         'id': partner[0],
-        'status_vinculo': partner[6],
-        'foto_url': partner[7],
+        'nome': partner[1],
+        'foto_url': partner[2],
       };
 
       if (partnerData['status_vinculo'] == 'vinculado') {
@@ -293,11 +298,13 @@ void main() async {
         );
       }
 
+      print('Partner data returned: $partnerData'); // Log para depuração
       return Response.ok(
         jsonEncode({
           'success': true,
           'message': 'Código do parceiro válido',
           'partner_id': partnerData['id'],
+          'nome': partnerData['nome'], // Retorna o nome do parceiro
           'foto_url': partnerData['foto_url'],
         }),
         headers: {'Content-Type': 'application/json'},

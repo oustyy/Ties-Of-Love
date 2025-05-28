@@ -205,47 +205,58 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage: widget.userFotoUrl.isNotEmpty
-                                ? MemoryImage(base64Decode(widget.userFotoUrl))
-                                : null,
-                            backgroundColor: Colors.white,
-                            child: widget.userFotoUrl.isEmpty
-                                ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                                : null,
+                          Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundImage: widget.userFotoUrl.isNotEmpty
+                                    ? MemoryImage(base64Decode(widget.userFotoUrl))
+                                    : null,
+                                backgroundColor: Colors.white,
+                                child: widget.userFotoUrl.isEmpty
+                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                    : null,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                widget.userName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontFamily: 'DancingScript',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                           const SizedBox(width: 16),
                           const Icon(Icons.favorite,
                               color: Color(0xFFFF5C75), size: 32),
                           const SizedBox(width: 16),
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage: widget.partnerFotoUrl.isNotEmpty
-                                ? MemoryImage(base64Decode(widget.partnerFotoUrl))
-                                : null,
-                            backgroundColor: Colors.white,
-                            child: widget.partnerFotoUrl.isEmpty
-                                ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                                : null,
+                          Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundImage: widget.partnerFotoUrl.isNotEmpty
+                                    ? MemoryImage(base64Decode(widget.partnerFotoUrl))
+                                    : null,
+                                backgroundColor: Colors.white,
+                                child: widget.partnerFotoUrl.isEmpty
+                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                    : null,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                widget.partnerName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontFamily: 'DancingScript',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(widget.userName,
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: 'DancingScript',
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 32),
-                          Text(widget.partnerName,
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: 'DancingScript',
-                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],

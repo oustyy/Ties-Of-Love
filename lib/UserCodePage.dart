@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_application_1/AguardandoConfirmacaoPage.dart';
-import 'dart:typed_data';
+import 'package:flutter_application_1/RelacionamentoPage.dart';
+import 'package:http/http.dart' as http;
 
 class UserCodePage extends StatefulWidget {
   final String userCode;
@@ -10,289 +11,283 @@ class UserCodePage extends StatefulWidget {
   final String password;
 
   const UserCodePage({
-    super.key,
     required this.userCode,
     required this.email,
     required this.password,
+    super.key,
   });
 
   @override
-  State<UserCodePage> createState() => _UserCodePageState();
+  _UserCodePageState createState() => _UserCodePageState();
 }
 
 class _UserCodePageState extends State<UserCodePage> {
-  bool _obscureUserCode = true;
-  bool _obscurePartnerCode = true;
-
   final TextEditingController _partnerCodeController = TextEditingController();
+  String? _partnerFotoUrl;
+  String? _partnerName;
+  bool _isLoading = false;
+  String _errorMessage = '';
+  String? _userFotoUrl;
+  String? _userName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': widget.email,
+          'senha': widget.password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['success'] == true) {
+          setState(() {
+            _userFotoUrl = responseData['foto_url'] as String? ?? '';
+            _userName = responseData['nome'] as String? ?? 'Usuário';
+          });
+        }
+      }
+    } catch (e) {
+      print("Erro ao buscar dados do usuário: $e");
+    }
+  }
 
   Future<void> _verifyPartnerCode() async {
+    final partnerCode = _partnerCodeController.text.trim();
+
+    if (partnerCode.isEmpty) {
+      setState(() {
+        _errorMessage = 'Por favor, insira o código do parceiro';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
     try {
       final response = await http.post(
         Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_code': widget.userCode,
-          'partner_code': _partnerCodeController.text.trim(),
+          'partner_code': partnerCode,
         }),
       );
 
-      print("Status code: ${response.statusCode}");
-      print("Response body: ${response.body}");
-
-      if (response.statusCode != 200) {
-        throw Exception('Erro ao conectar ao servidor: ${response.statusCode}');
-      }
-
-      if (response.body.isEmpty) {
-        throw Exception('Resposta do servidor está vazia');
-      }
-
+      print("Response from /verificar-codigo-parceiro: ${response.body}"); // Log para depuração
       final responseData = jsonDecode(response.body);
-      if (responseData is! Map<String, dynamic>) {
-        throw Exception('Resposta do servidor não é um JSON válido');
-      }
 
       if (responseData['success'] == true) {
-        _showConfirmDialog(responseData['foto_url'] as String? ?? '');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['message'] ?? 'Erro ao verificar código')),
+        setState(() {
+          _partnerFotoUrl = responseData['foto_url'] as String? ?? '';
+          _partnerName = responseData['nome'] as String? ?? 'Parceria'; // Garantir que o nome seja atualizado
+        });
+
+        // Solicitar vínculo
+        final vinculoResponse = await http.post(
+          Uri.parse('http://localhost:8080/solicitar-vinculo'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_code': widget.userCode,
+            'partner_code': partnerCode,
+          }),
         );
+
+        final vinculoData = jsonDecode(vinculoResponse.body);
+
+        if (vinculoData['success'] == true) {
+          if (vinculoData['status'] == 'vinculado') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RelacionamentoPage(
+                  userImageUrl: _userFotoUrl ?? '',
+                  userName: _userName ?? 'Usuário',
+                  partnerImageUrl: _partnerFotoUrl ?? '',
+                  partnerName: _partnerName ?? 'Parceria', // Passar o nome capturado
+                  relationshipDays: 0,
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AguardandoConfirmacaoPage(
+                  userCode: widget.userCode,
+                  partnerCode: partnerCode,
+                  userName: _userName ?? 'Usuário',
+                  partnerName: _partnerName ?? 'Parceria', // Passar o nome capturado
+                  userImageUrl: _userFotoUrl ?? '',
+                  partnerImageUrl: _partnerFotoUrl ?? '',
+                ),
+              ),
+            );
+          }
+        } else {
+          setState(() {
+            _errorMessage = vinculoData['message'] ?? 'Erro ao solicitar vínculo';
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = responseData['message'] ?? 'Código do parceiro inválido';
+        });
       }
     } catch (e) {
-      print('Erro ao verificar código do parceiro: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao verificar código: $e')),
-      );
+      setState(() {
+        _errorMessage = 'Erro de conexão com o servidor';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-  }
-
-  void _showConfirmDialog(String partnerFotoBase64) {
-    ImageProvider partnerImage;
-    if (partnerFotoBase64.isNotEmpty) {
-      try {
-        final bytes = base64Decode(partnerFotoBase64);
-        partnerImage = MemoryImage(bytes);
-      } catch (e) {
-        print('Erro ao decodificar base64: $e');
-        partnerImage = const AssetImage('assets/images/default_avatar.png');
-      }
-    } else {
-      partnerImage = const AssetImage('assets/images/default_avatar.png');
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFFE6F0),
-        title: const Text(
-          'Confirma seu parceiro(a)?',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(radius: 40, backgroundImage: partnerImage),
-            const SizedBox(height: 12),
-            Text('Código: ${_partnerCodeController.text}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.pink),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AguardandoConfirmacaoPage(
-                    userCode: widget.userCode,
-                    partnerCode: _partnerCodeController.text.trim(),
-                    email: widget.email,
-                    password: widget.password,
-                  ),
-                ),
-              );
-            },
-            child: const Text('Sim', style: TextStyle(color: Colors.pink)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFE6F0),
-      body: Column(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
-            ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              color: const Color(0xFFFFC9C9),
-              child: Center(
-                child: Image.asset(
-                  'assets/images/logo.jpg',
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
               ),
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 20,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 30),
-                      const Text(
-                        'Código de Usuário',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: TextEditingController(text: widget.userCode),
-                        obscureText: _obscureUserCode,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureUserCode
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.pink,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureUserCode = !_obscureUserCode;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 18,
-                            horizontal: 20,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Código do(a) parceiro(a)',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _partnerCodeController,
-                        obscureText: _obscurePartnerCode,
-                        decoration: InputDecoration(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePartnerCode
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.pink,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePartnerCode = !_obscurePartnerCode;
-                              });
-                            },
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 18,
-                            horizontal: 20,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_partnerCodeController.text.isNotEmpty) {
-                            _verifyPartnerCode();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Por favor, insira o código do parceiro')),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5C75),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 5,
-                        ),
-                        child: const Text(
-                          'Confirmar',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Color(0xFFFF5C75),
-                        ),
-                        label: const Text(
-                          'Voltar',
-                          style: TextStyle(
-                            color: Color(0xFFFF5C75),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                color: const Color(0xFFFFCAC2),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/logo.jpg',
+                    height: 80,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              child: Column(
+                children: [
+                  const Text(
+                    'Seu código',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.userCode,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF5C75),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      IconButton(
+                        icon: const Icon(Icons.copy, color: Color(0xFFFF5C75)),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: widget.userCode));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Código copiado!')),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Insira o código do parceiro',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _partnerCodeController,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 18,
+                        horizontal: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_errorMessage.isNotEmpty)
+                    Text(
+                      _errorMessage,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _verifyPartnerCode,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5C75),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 5,
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          )
+                        : const Text(
+                            'Confirmar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _partnerCodeController.dispose();
+    super.dispose();
   }
 }

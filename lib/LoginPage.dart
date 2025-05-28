@@ -57,8 +57,15 @@ class _LoginPageState extends State<LoginPage> {
         final userCode = responseData['codigo_usuario'] as String? ?? '';
         final statusVinculo = responseData['status_vinculo'] as String? ?? 'livre';
         final userFotoUrl = responseData['foto_url'] as String? ?? '';
+        final userName = responseData['nome'] as String? ?? 'Usuário'; // Nome do usuário logado
+
+        // Exibe a mensagem de boas-vindas com o nome do usuário
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Bem-vindo(a), $userName! Login realizado com sucesso')),
+        );
 
         String partnerFotoUrl = '';
+        String partnerName = 'Parceria'; // Nome padrão do parceiro
 
         // Buscar dados do parceiro vinculado, se existir
         if (statusVinculo == 'vinculado') {
@@ -75,6 +82,7 @@ class _LoginPageState extends State<LoginPage> {
             final partnerData = jsonDecode(partnerResponse.body);
             if (partnerData['success'] == true) {
               partnerFotoUrl = partnerData['foto_url'] as String? ?? '';
+              partnerName = partnerData['nome'] as String? ?? 'Parceria'; // Nome do parceiro retornado
             } else {
               print("Erro ao buscar parceiro: ${partnerData['message']}");
             }
@@ -89,7 +97,10 @@ class _LoginPageState extends State<LoginPage> {
             MaterialPageRoute(
               builder: (context) => RelacionamentoPage(
                 userImageUrl: userFotoUrl,
+                userName: userName,
                 partnerImageUrl: partnerFotoUrl,
+                partnerName: partnerName,
+                relationshipDays: 0, // Placeholder, ajuste conforme necessário
               ),
             ),
           );

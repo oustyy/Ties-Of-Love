@@ -3,11 +3,17 @@ import 'package:flutter_application_1/RelacionamentoStatusPage.dart';
 
 class RelacionamentoPage extends StatefulWidget {
   final String userImageUrl;
+  final String userName;
   final String partnerImageUrl;
+  final String partnerName;
+  final int relationshipDays;
 
   const RelacionamentoPage({
     required this.userImageUrl,
+    required this.userName,
     required this.partnerImageUrl,
+    required this.partnerName,
+    required this.relationshipDays,
     super.key,
   });
 
@@ -154,9 +160,9 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
                   MaterialPageRoute(
                     builder: (context) => RelacionamentoStatusPage(
                       userFotoUrl: widget.userImageUrl,
-                      userName: 'Você',
+                      userName: widget.userName,
                       partnerFotoUrl: widget.partnerImageUrl,
-                      partnerName: 'Parceria',
+                      partnerName: widget.partnerName,
                       relationshipDays: diasRelacionamento,
                     ),
                   ),

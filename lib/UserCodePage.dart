@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_application_1/AguardandoConfirmacaoPage.dart';
 import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config.dart'; // Certifique-se de que está importado
 
 class UserCodePage extends StatefulWidget {
   final String userCode;
@@ -39,7 +40,7 @@ class _UserCodePageState extends State<UserCodePage> {
   Future<void> _fetchUserData() async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/login'),
+        Uri.parse('${Config.baseUrl}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': widget.email,
@@ -78,7 +79,7 @@ class _UserCodePageState extends State<UserCodePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
+        Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'), // Use Config.baseUrl
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_code': widget.userCode,
@@ -86,18 +87,17 @@ class _UserCodePageState extends State<UserCodePage> {
         }),
       );
 
-      print("Response from /verificar-codigo-parceiro: ${response.body}"); // Log para depuração
+      print("Response from /verificar-codigo-parceiro: ${response.body}");
       final responseData = jsonDecode(response.body);
 
       if (responseData['success'] == true) {
         setState(() {
           _partnerFotoUrl = responseData['foto_url'] as String? ?? '';
-          _partnerName = responseData['nome'] as String? ?? 'Parceria'; // Garantir que o nome seja atualizado
+          _partnerName = responseData['nome'] as String? ?? 'Parceria';
         });
 
-        // Solicitar vínculo
         final vinculoResponse = await http.post(
-          Uri.parse('http://localhost:8080/solicitar-vinculo'),
+          Uri.parse('${Config.baseUrl}/solicitar-vinculo'), // Use Config.baseUrl
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'user_code': widget.userCode,
@@ -116,7 +116,7 @@ class _UserCodePageState extends State<UserCodePage> {
                   userImageUrl: _userFotoUrl ?? '',
                   userName: _userName ?? 'Usuário',
                   partnerImageUrl: _partnerFotoUrl ?? '',
-                  partnerName: _partnerName ?? 'Parceria', // Passar o nome capturado
+                  partnerName: _partnerName ?? 'Parceria',
                   relationshipDays: 0,
                 ),
               ),
@@ -129,7 +129,7 @@ class _UserCodePageState extends State<UserCodePage> {
                   userCode: widget.userCode,
                   partnerCode: partnerCode,
                   userName: _userName ?? 'Usuário',
-                  partnerName: _partnerName ?? 'Parceria', // Passar o nome capturado
+                  partnerName: _partnerName ?? 'Parceria',
                   userImageUrl: _userFotoUrl ?? '',
                   partnerImageUrl: _partnerFotoUrl ?? '',
                 ),
@@ -150,6 +150,7 @@ class _UserCodePageState extends State<UserCodePage> {
       setState(() {
         _errorMessage = 'Erro de conexão com o servidor';
       });
+      print("Erro ao verificar/vincular parceiro: $e");
     } finally {
       setState(() {
         _isLoading = false;

@@ -4,6 +4,7 @@ import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:flutter_application_1/CriarContaPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_application_1/config.dart'; // Certifique-se de que esta importação está presente
 
 class TiesOfLoveApp extends StatelessWidget {
   const TiesOfLoveApp({super.key});
@@ -41,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/login'),
+        Uri.parse('${Config.baseUrl}/login'), // Use Config.baseUrl aqui
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -57,20 +58,18 @@ class _LoginPageState extends State<LoginPage> {
         final userCode = responseData['codigo_usuario'] as String? ?? '';
         final statusVinculo = responseData['status_vinculo'] as String? ?? 'livre';
         final userFotoUrl = responseData['foto_url'] as String? ?? '';
-        final userName = responseData['nome'] as String? ?? 'Usuário'; // Nome do usuário logado
+        final userName = responseData['nome'] as String? ?? 'Usuário';
 
-        // Exibe a mensagem de boas-vindas com o nome do usuário
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Bem-vindo(a), $userName! Login realizado com sucesso')),
         );
 
         String partnerFotoUrl = '';
-        String partnerName = 'Parceria'; // Nome padrão do parceiro
+        String partnerName = 'Parceria';
 
-        // Buscar dados do parceiro vinculado, se existir
         if (statusVinculo == 'vinculado') {
           final partnerResponse = await http.post(
-            Uri.parse('http://localhost:8080/verificar-codigo-parceiro'),
+            Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'), // Use Config.baseUrl aqui
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'user_code': userCode,
@@ -82,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
             final partnerData = jsonDecode(partnerResponse.body);
             if (partnerData['success'] == true) {
               partnerFotoUrl = partnerData['foto_url'] as String? ?? '';
-              partnerName = partnerData['nome'] as String? ?? 'Parceria'; // Nome do parceiro retornado
+              partnerName = partnerData['nome'] as String? ?? 'Parceria';
             } else {
               print("Erro ao buscar parceiro: ${partnerData['message']}");
             }
@@ -100,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                 userName: userName,
                 partnerImageUrl: partnerFotoUrl,
                 partnerName: partnerName,
-                relationshipDays: 0, // Placeholder, ajuste conforme necessário
+                relationshipDays: 0,
               ),
             ),
           );

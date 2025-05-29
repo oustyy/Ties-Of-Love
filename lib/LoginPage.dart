@@ -144,11 +144,7 @@ class _LoginPageState extends State<LoginPage> {
               padding: const EdgeInsets.symmetric(vertical: 40),
               color: const Color(0xFFFFCAC2),
               child: Center(
-                child: Image.asset(
-                  'assets/images/logo.jpg',
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
+                
               ),
             ),
           ),

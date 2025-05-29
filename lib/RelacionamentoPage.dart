@@ -34,10 +34,7 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
       backgroundColor: const Color(0xFFFFE6F0), // Fundo rosa claro
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFCAC2), // Rosa escuro
-        title: Image.asset(
-          'assets/images/logo.jpg', // Aqui fica sua logo no lugar do texto
-          height: 100,
-        ),
+        
         centerTitle: true,
         elevation: 0,
       ),

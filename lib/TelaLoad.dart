@@ -27,11 +27,7 @@ class TelaLoad extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  Image.asset(
-                    'assets/images/logo.jpg',
-                    height: 130,
-                    width: 120,
-                  ),
+              
                 ],
               ),
 
@@ -44,7 +40,7 @@ class TelaLoad extends StatelessWidget {
                       maxHeight: 600,
                     ),
                     child: Image.asset(
-                      'assets/images/coracao.png',
+                      'assets/images/logo.png',
                       fit: BoxFit.contain,
                     ),
                   ),

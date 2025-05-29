@@ -99,11 +99,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
               padding: const EdgeInsets.symmetric(vertical: 40),
               color: const Color(0xFFFFCAC2),
               child: Center(
-                child: Image.asset(
-                  'assets/images/logo.jpg',
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
+                
               ),
             ),
           ),

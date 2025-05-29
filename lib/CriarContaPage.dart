@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter_application_1/config.dart'; // Importe o config.dart
 
 class CriarContaPage extends StatefulWidget {
   const CriarContaPage({super.key});
@@ -22,10 +23,10 @@ class _CriarContaPageState extends State<CriarContaPage> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes(); // Lê os bytes diretamente do XFile
+      final bytes = await pickedFile.readAsBytes();
       if (bytes != null) {
         final base64Image = base64Encode(bytes);
-        print('Base64 da imagem: ${base64Image.substring(0, 50)}...'); // Log parcial para verificar
+        print('Base64 da imagem: ${base64Image.substring(0, 50)}...');
         setState(() {
           _fotoBase64 = base64Image;
         });
@@ -49,10 +50,10 @@ class _CriarContaPageState extends State<CriarContaPage> {
       return;
     }
 
-    print('Enviando foto_url: ${_fotoBase64?.substring(0, 50)}...'); // Log para verificar antes do envio
+    print('Enviando foto_url: ${_fotoBase64?.substring(0, 50)}...');
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/cadastrar'),
+        Uri.parse('${Config.baseUrl}/cadastrar'), // Use Config.baseUrl aqui
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nome': nome,

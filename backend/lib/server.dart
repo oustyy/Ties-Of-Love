@@ -5,7 +5,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
 import 'dart:math';
 
-// Configurações do banco
+// Configurações do banco de dados
 final db = PostgreSQLConnection(
   'localhost',
   5432,
@@ -46,15 +46,16 @@ Future<String> _generateUserCode() async {
 }
 
 void main() async {
-  print('Attempting to connect to database...');
+  print('Tentando conectar ao banco de dados...');
   try {
     await db.open();
-    print('Database connected successfully!');
+    print('Conexão com o banco de dados estabelecida com sucesso!');
   } catch (e) {
-    print('Failed to connect to database: $e');
+    print('Falha ao conectar ao banco de dados: $e');
     return;
   }
 
+  // Criação da tabela usuarios
   try {
     await db.query('''
       CREATE TABLE IF NOT EXISTS usuarios (
@@ -69,12 +70,13 @@ void main() async {
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     ''');
-    print('Table "usuarios" created or already exists.');
+    print('Tabela "usuarios" criada ou já existe.');
   } catch (e) {
-    print('Error creating table: $e');
+    print('Erro ao criar a tabela usuarios: $e');
     return;
   }
 
+  // Criação da tabela relacionamentos
   try {
     await db.query('''
       CREATE TABLE IF NOT EXISTS relacionamentos (
@@ -84,13 +86,14 @@ void main() async {
         data_inicio DATE,
         mensagem TEXT,
         foto_base64 TEXT,
+        completed_task_sets INTEGER DEFAULT 0,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_code, partner_code)
       );
     ''');
-    print('Table "relacionamentos" created or already exists.');
+    print('Tabela "relacionamentos" criada ou já existe.');
   } catch (e) {
-    print('Error creating table relacionamentos: $e');
+    print('Erro ao criar a tabela relacionamentos: $e');
     return;
   }
 
@@ -101,7 +104,7 @@ void main() async {
     try {
       if (db.isClosed) {
         await db.open();
-        print('Reopened database connection');
+        print('Conexão com o banco de dados reaberta');
       }
 
       final body = await request.readAsString();
@@ -112,7 +115,7 @@ void main() async {
       final senha = data['senha'];
       final fotoUrl = data['foto_url'] as String? ?? '';
 
-      print('Dados recebidos - nome: $nome, email: $email, foto_url: ${fotoUrl.substring(0, 50)}...');
+      print('Dados recebidos - nome: $nome, email: $email, foto_url: ${fotoUrl.length > 50 ? fotoUrl.substring(0, 50) + '...' : fotoUrl}');
 
       if (nome == null || email == null || senha == null || nome.isEmpty || email.isEmpty || senha.isEmpty) {
         return Response.badRequest(
@@ -136,7 +139,7 @@ void main() async {
       );
 
       if (result.isNotEmpty) {
-        print('Usuário inserido com sucesso: ID ${result[0][0]}, foto_url: $fotoUrl');
+        print('Usuário inserido com sucesso: ID ${result[0][0]}, codigo_usuario: $codigoUsuario');
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -198,7 +201,7 @@ void main() async {
         );
         final hasRelationship = (relResult.first[0] as int) > 0;
 
-        print('Login successful - User data: $userData, hasRelationship: $hasRelationship');
+        print('Login bem-sucedido - Dados do usuário: $userData, tem relacionamento: $hasRelationship');
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -220,6 +223,7 @@ void main() async {
         );
       }
     } catch (e) {
+      print('Erro no login: $e');
       return Response.internalServerError(
         body: jsonEncode({'success': false, 'message': 'Erro no login: $e'}),
         headers: {'Content-Type': 'application/json'},
@@ -286,7 +290,7 @@ void main() async {
           'foto_url': partner[2],
         };
 
-        print('Partner data returned: $partnerData');
+        print('Dados do parceiro retornados: $partnerData');
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -326,7 +330,7 @@ void main() async {
         );
       }
 
-      print('Partner data returned: $partnerData');
+      print('Dados do parceiro retornados: $partnerData');
       return Response.ok(
         jsonEncode({
           'success': true,
@@ -498,8 +502,8 @@ void main() async {
       // Insere ou atualiza as informações na tabela relacionamentos
       final result = await db.query(
         '''
-        INSERT INTO relacionamentos (user_code, partner_code, data_inicio, mensagem, foto_base64)
-        VALUES (@user_code, @partner_code, @data_inicio, @mensagem, @foto_base64)
+        INSERT INTO relacionamentos (user_code, partner_code, data_inicio, mensagem, foto_base64, completed_task_sets)
+        VALUES (@user_code, @partner_code, @data_inicio, @mensagem, @foto_base64, 0)
         ON CONFLICT (user_code, partner_code)
         DO UPDATE SET data_inicio = @data_inicio, mensagem = @mensagem, foto_base64 = @foto_base64
         RETURNING id
@@ -561,7 +565,7 @@ void main() async {
         },
       );
 
-      print('Query result for user_code: $userCode, partner_code: $partnerCode: $result');
+      print('Resultado da consulta para user_code: $userCode, partner_code: $partnerCode: $result');
 
       if (result.isNotEmpty) {
         final partnerRecord = result.first;
@@ -595,6 +599,131 @@ void main() async {
     }
   });
 
+  // Endpoint para atualizar os conjuntos de tarefas completadas
+  router.post('/update-task-sets', (Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final userCode = data['user_code'];
+      final partnerCode = data['partner_code'];
+      final completedTaskSets = data['completed_task_sets'] as int? ?? 0;
+
+      if (userCode == null || partnerCode == null || userCode.isEmpty || partnerCode.isEmpty) {
+        print('Erro: Códigos do usuário e parceiro não fornecidos - userCode: $userCode, partnerCode: $partnerCode');
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Códigos do usuário e do parceiro são obrigatórios'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      print('Atualizando completed_task_sets para o par userCode: $userCode e partnerCode: $partnerCode com valor: $completedTaskSets');
+
+      // Atualiza o completed_task_sets na tabela relacionamentos
+      final result = await db.query(
+        '''
+        UPDATE relacionamentos
+        SET completed_task_sets = @completed_task_sets
+        WHERE (user_code = @user_code AND partner_code = @partner_code)
+           OR (user_code = @partner_code AND partner_code = @user_code)
+        RETURNING completed_task_sets
+        ''',
+        substitutionValues: {
+          'completed_task_sets': completedTaskSets,
+          'user_code': userCode,
+          'partner_code': partnerCode,
+        },
+      );
+
+      if (result.isEmpty) {
+        print('Relacionamento não encontrado para userCode: $userCode e partnerCode: $partnerCode');
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Relacionamento não encontrado'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      print('Resultado da atualização: $result');
+
+      return Response.ok(
+        jsonEncode({
+          'success': true,
+          'message': 'Conjuntos de tarefas atualizados com sucesso para o par',
+          'completed_task_sets': completedTaskSets,
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      print('Erro ao atualizar completed_task_sets: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'success': false, 'message': 'Erro ao atualizar conjuntos de tarefas: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
+  // Endpoint para obter os conjuntos de tarefas completadas
+  router.post('/get-task-sets', (Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final userCode = data['user_code'];
+      final partnerCode = data['partner_code'];
+
+      if (userCode == null || partnerCode == null || userCode.isEmpty || partnerCode.isEmpty) {
+        print('Erro: Códigos do usuário e parceiro não fornecidos - userCode: $userCode, partnerCode: $partnerCode');
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Códigos do usuário e do parceiro são obrigatórios'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      print('Buscando completed_task_sets para o par userCode: $userCode e partnerCode: $partnerCode');
+
+      final result = await db.query(
+        '''
+        SELECT completed_task_sets
+        FROM relacionamentos
+        WHERE (user_code = @user_code AND partner_code = @partner_code)
+           OR (user_code = @partner_code AND partner_code = @user_code)
+        ''',
+        substitutionValues: {
+          'user_code': userCode,
+          'partner_code': partnerCode,
+        },
+      );
+
+      print('Resultado da consulta: $result');
+
+      if (result.isEmpty) {
+        print('Relacionamento não encontrado para userCode: $userCode e partnerCode: $partnerCode');
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Relacionamento não encontrado'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final taskSets = result.first[0] as int;
+
+      print('Valor retornado de completed_task_sets: $taskSets');
+
+      return Response.ok(
+        jsonEncode({
+          'success': true,
+          'completed_task_sets': taskSets,
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      print('Erro ao buscar completed_task_sets: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'success': false, 'message': 'Erro ao buscar conjuntos de tarefas: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
   final handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(_corsMiddleware)
@@ -602,9 +731,9 @@ void main() async {
 
   try {
     final server = await shelf_io.serve(handler, '0.0.0.0', 8080);
-    print('Server running on 0.0.0.0:${server.port}');
+    print('Servidor rodando em 0.0.0.0:${server.port}');
   } catch (e) {
-    print('Error starting server: $e');
+    print('Erro ao iniciar o servidor: $e');
   }
 }
 

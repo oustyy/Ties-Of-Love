@@ -41,9 +41,9 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   Timer? _updateTimer;
   Timer? _refreshTimer;
   bool _showTimer = false;
-  int _remainingSeconds = 300; // 5 minutes in seconds
-  int _completedTaskSets = 0; // Counter for completed sets of 4 tasks
-  String _currentPetImage = 'assets/images/pet1.png'; // Initial pet image
+  int _remainingSeconds = 300; // 5 minutos em segundos
+  int _completedTaskSets = 0; // Sincronizado com o par no servidor
+  String _currentPetImage = 'assets/images/pet1.png'; // Imagem inicial do pet
 
   List<Map<String, dynamic>> tasks = [];
   List<Map<String, dynamic>> allTasks = [
@@ -76,9 +76,11 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
       duration: const Duration(milliseconds: 250),
     );
     _fetchPartnerData();
-    _updateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _fetchCompletedTaskSets(); // Inicializa com os dados do servidor
+    _updateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         _fetchPartnerData();
+        _fetchCompletedTaskSets(); // Sincroniza a cada 5 segundos
       }
     });
     _loadInitialTasks();
@@ -92,7 +94,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
 
   Future<void> _fetchPartnerData() async {
     try {
-      print('Fetching data for userCode: ${widget.userCode}, partnerCode: ${widget.partnerCode}');
+      print('Buscando dados para userCode: ${widget.userCode}, partnerCode: ${widget.partnerCode}');
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/obter-relacionamento'),
         headers: {'Content-Type': 'application/json'},
@@ -102,18 +104,76 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
         }),
       );
 
-      print('Response from /obter-relacionamento: ${response.body}');
+      print('Resposta do /obter-relacionamento: ${response.body}');
       final responseData = jsonDecode(response.body);
       if (responseData['success'] == true) {
         setState(() {
           partnerMessage = responseData['mensagem'] as String? ?? '';
           partnerPhotoBase64 = responseData['foto_base64'] as String? ?? '';
           partnerDataInicio = responseData['data_inicio'] as String?;
-          print('Updated partnerMessage: $partnerMessage, partnerPhotoBase64: $partnerPhotoBase64');
+          print('Dados do parceiro atualizados - mensagem: $partnerMessage, foto: $partnerPhotoBase64');
         });
       }
     } catch (e) {
       print('Erro ao buscar dados do parceiro: $e');
+    }
+  }
+
+  Future<void> _fetchCompletedTaskSets() async {
+    try {
+      print('Buscando completed_task_sets para userCode: ${widget.userCode}, partnerCode: ${widget.partnerCode}');
+      final response = await http.post(
+        Uri.parse('${Config.baseUrl}/get-task-sets'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_code': widget.userCode,
+          'partner_code': widget.partnerCode,
+        }),
+      );
+
+      print('Resposta do /get-task-sets: ${response.body}');
+      final responseData = jsonDecode(response.body);
+      if (responseData['success'] == true) {
+        final newTaskSets = responseData['completed_task_sets'] as int? ?? 0;
+        print('Valor recebido de completed_task_sets: $newTaskSets (valor atual: $_completedTaskSets)');
+        if (newTaskSets != _completedTaskSets) {
+          setState(() {
+            _completedTaskSets = newTaskSets;
+            _updatePetImage();
+          });
+          print('Estado atualizado: _completedTaskSets = $_completedTaskSets');
+        }
+      } else {
+        print('Falha ao buscar completed_task_sets: ${responseData['message']}');
+      }
+    } catch (e) {
+      print('Erro ao buscar completed_task_sets: $e');
+    }
+  }
+
+  Future<void> _updateCompletedTaskSets() async {
+    try {
+      print('Atualizando completed_task_sets para userCode: ${widget.userCode}, partnerCode: ${widget.partnerCode} com valor: $_completedTaskSets');
+      final response = await http.post(
+        Uri.parse('${Config.baseUrl}/update-task-sets'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_code': widget.userCode,
+          'partner_code': widget.partnerCode,
+          'completed_task_sets': _completedTaskSets,
+        }),
+      );
+
+      print('Resposta do /update-task-sets: ${response.body}');
+      final responseData = jsonDecode(response.body);
+      if (responseData['success'] != true) {
+        print('Erro ao atualizar completed_task_sets: ${responseData['message']}');
+      } else {
+        // Após atualizar, busca imediatamente o valor mais recente para garantir sincronização
+        await _fetchCompletedTaskSets();
+      }
+    } catch (e) {
+      print('Erro ao atualizar completed_task_sets: $e');
     }
   }
 
@@ -154,7 +214,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   void _startRefreshTimer() {
     setState(() {
       _showTimer = true;
-      _remainingSeconds = 300; // 5 minutes
+      _remainingSeconds = 300; // 5 minutos
     });
 
     _refreshTimer?.cancel();
@@ -179,7 +239,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
       } else if (_completedTaskSets >= 2) {
         _currentPetImage = 'assets/images/pet3.png';
       }
-      print('Current pet image set to: $_currentPetImage'); // Debug print
+      print('Imagem do pet atualizada para: $_currentPetImage');
     });
   }
 
@@ -361,6 +421,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                                           if (tasks.isEmpty) {
                                             _completedTaskSets++;
                                             _updatePetImage();
+                                            _updateCompletedTaskSets(); // Sincroniza com o servidor
                                             _startRefreshTimer();
                                           }
                                         });
@@ -465,7 +526,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                                   textAlign: TextAlign.center,
                                 )
                               : const Text(
-                                  'No message from partner yet',
+                                  'Nenhuma mensagem do parceiro ainda',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontStyle: FontStyle.italic,
@@ -514,7 +575,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ),
                       ],
                     ),
-                    child: _currentPetImage.contains('pet') ? null : const Icon(Icons.error, size: 50, color: Colors.red), // Fallback
+                    child: _currentPetImage.contains('pet') ? null : const Icon(Icons.error, size: 50, color: Colors.red),
                   ),
                 const Spacer(),
               ],

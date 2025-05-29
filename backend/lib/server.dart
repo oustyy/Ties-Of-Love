@@ -75,6 +75,25 @@ void main() async {
     return;
   }
 
+  try {
+    await db.query('''
+      CREATE TABLE IF NOT EXISTS relacionamentos (
+        id SERIAL PRIMARY KEY,
+        user_code TEXT NOT NULL REFERENCES usuarios(codigo_usuario),
+        partner_code TEXT NOT NULL REFERENCES usuarios(codigo_usuario),
+        data_inicio DATE,
+        mensagem TEXT,
+        foto_base64 TEXT,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_code, partner_code)
+      );
+    ''');
+    print('Table "relacionamentos" created or already exists.');
+  } catch (e) {
+    print('Error creating table relacionamentos: $e');
+    return;
+  }
+
   final router = Router();
 
   // Endpoint de cadastro
@@ -169,6 +188,7 @@ void main() async {
           'codigo_usuario': user[4] as String,
           'status_vinculo': user[6] as String,
           'foto_url': user[7] as String,
+          'codigo_parceiro': user[5] as String?,
         };
         print('Login successful - User data: $userData');
         return Response.ok(
@@ -180,6 +200,7 @@ void main() async {
             'foto_url': userData['foto_url'],
             'nome': userData['nome'],
             'id': userData['id'],
+            'codigo_parceiro': userData['codigo_parceiro'],
           }),
           headers: {'Content-Type': 'application/json'},
         );
@@ -270,7 +291,7 @@ void main() async {
       }
 
       final partnerResult = await db.query(
-        'SELECT id, nome, foto_url FROM usuarios WHERE codigo_usuario = @partner_code',
+        'SELECT id, nome, foto_url, status_vinculo FROM usuarios WHERE codigo_usuario = @partner_code',
         substitutionValues: {'partner_code': partnerCode},
       );
 
@@ -286,6 +307,7 @@ void main() async {
         'id': partner[0],
         'nome': partner[1],
         'foto_url': partner[2],
+        'status_vinculo': partner[3],
       };
 
       if (partnerData['status_vinculo'] == 'vinculado') {
@@ -396,13 +418,152 @@ void main() async {
     }
   });
 
+  // Endpoint para atualizar informações do relacionamento
+  router.post('/atualizar-relacionamento', (Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final userCode = data['user_code'];
+      final partnerCode = data['partner_code'];
+      final dataInicio = data['data_inicio'];
+      final mensagem = data['mensagem'];
+      final fotoBase64 = data['foto_base64'] ?? '';
+
+      if (userCode == null || partnerCode == null || userCode.isEmpty || partnerCode.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Códigos do usuário e do parceiro são obrigatórios'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Verifica se o vínculo existe
+      final vinculoResult = await db.query(
+        'SELECT * FROM usuarios WHERE codigo_usuario = @user_code AND codigo_parceiro = @partner_code AND status_vinculo = @status',
+        substitutionValues: {
+          'user_code': userCode,
+          'partner_code': partnerCode,
+          'status': 'vinculado',
+        },
+      );
+
+      if (vinculoResult.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Vínculo não encontrado ou não está confirmado'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Insere ou atualiza as informações na tabela relacionamentos
+      final result = await db.query(
+        '''
+        INSERT INTO relacionamentos (user_code, partner_code, data_inicio, mensagem, foto_base64)
+        VALUES (@user_code, @partner_code, @data_inicio, @mensagem, @foto_base64)
+        ON CONFLICT (user_code, partner_code)
+        DO UPDATE SET data_inicio = @data_inicio, mensagem = @mensagem, foto_base64 = @foto_base64
+        RETURNING id
+        ''',
+        substitutionValues: {
+          'user_code': userCode,
+          'partner_code': partnerCode,
+          'data_inicio': dataInicio,
+          'mensagem': mensagem ?? '',
+          'foto_base64': fotoBase64,
+        },
+      );
+
+      if (result.isNotEmpty) {
+        return Response.ok(
+          jsonEncode({
+            'success': true,
+            'message': 'Informações do relacionamento atualizadas com sucesso',
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response.internalServerError(
+          body: jsonEncode({'success': false, 'message': 'Falha ao atualizar informações do relacionamento'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    } catch (e) {
+      print('Erro ao atualizar relacionamento: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'success': false, 'message': 'Erro ao atualizar relacionamento: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
+  // Endpoint para obter informações do relacionamento
+  router.post('/obter-relacionamento', (Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final userCode = data['user_code'];
+      final partnerCode = data['partner_code'];
+
+      if (userCode == null || partnerCode == null || userCode.isEmpty || partnerCode.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Códigos do usuário e do parceiro são obrigatórios'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Busca as informações do relacionamento do parceiro
+      final result = await db.query(
+        'SELECT data_inicio, mensagem, foto_base64 FROM relacionamentos WHERE (user_code = @user_code AND partner_code = @partner_code) OR (user_code = @partner_code AND partner_code = @user_code)',
+        substitutionValues: {
+          'user_code': userCode,
+          'partner_code': partnerCode,
+        },
+      );
+
+      print('Query result for user_code: $userCode, partner_code: $partnerCode: $result');
+
+      if (result.isNotEmpty) {
+        // Find the record where user_code is the partner's code
+        final partnerRecord = result.firstWhere(
+          (row) => row.toColumnMap()['user_code'] == partnerCode,
+          orElse: () => result.first,
+        );
+        return Response.ok(
+          jsonEncode({
+            'success': true,
+            'data_inicio': partnerRecord[0]?.toIso8601String(),
+            'mensagem': partnerRecord[1] as String? ?? '',
+            'foto_base64': partnerRecord[2] as String? ?? '',
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response.ok(
+          jsonEncode({
+            'success': true,
+            'data_inicio': null,
+            'mensagem': '',
+            'foto_base64': '',
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    } catch (e) {
+      print('Erro ao obter relacionamento: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'success': false, 'message': 'Erro ao obter relacionamento: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
   final handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(_corsMiddleware)
       .addHandler(router);
 
   try {
-    final server = await shelf_io.serve(handler, '0.0.0.0', 8080); // Ouve em todas as interfaces
+    final server = await shelf_io.serve(handler, '0.0.0.0', 8080);
     print('Server running on 0.0.0.0:${server.port}');
   } catch (e) {
     print('Error starting server: $e');

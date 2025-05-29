@@ -4,7 +4,7 @@ import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:flutter_application_1/CriarContaPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_application_1/config.dart'; // Certifique-se de que esta importação está presente
+import 'package:flutter_application_1/config.dart';
 
 class TiesOfLoveApp extends StatelessWidget {
   const TiesOfLoveApp({super.key});
@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${Config.baseUrl}/login'), // Use Config.baseUrl aqui
+        Uri.parse('${Config.baseUrl}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -59,6 +59,7 @@ class _LoginPageState extends State<LoginPage> {
         final statusVinculo = responseData['status_vinculo'] as String? ?? 'livre';
         final userFotoUrl = responseData['foto_url'] as String? ?? '';
         final userName = responseData['nome'] as String? ?? 'Usuário';
+        final partnerCode = responseData['codigo_parceiro'] as String? ?? '';
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Bem-vindo(a), $userName! Login realizado com sucesso')),
@@ -69,11 +70,11 @@ class _LoginPageState extends State<LoginPage> {
 
         if (statusVinculo == 'vinculado') {
           final partnerResponse = await http.post(
-            Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'), // Use Config.baseUrl aqui
+            Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'user_code': userCode,
-              'partner_code': '', // O backend buscará o partner_code associado
+              'partner_code': '',
             }),
           );
 
@@ -100,6 +101,8 @@ class _LoginPageState extends State<LoginPage> {
                 partnerImageUrl: partnerFotoUrl,
                 partnerName: partnerName,
                 relationshipDays: 0,
+                userCode: userCode,
+                partnerCode: partnerCode,
               ),
             ),
           );
@@ -143,9 +146,7 @@ class _LoginPageState extends State<LoginPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 40),
               color: const Color(0xFFFFCAC2),
-              child: Center(
-                
-              ),
+              child: Center(),
             ),
           ),
           Expanded(

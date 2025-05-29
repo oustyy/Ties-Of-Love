@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config.dart';
 
 class RelacionamentoStatusPage extends StatefulWidget {
   final String userFotoUrl;
@@ -8,6 +11,8 @@ class RelacionamentoStatusPage extends StatefulWidget {
   final String partnerFotoUrl;
   final String partnerName;
   final int relationshipDays;
+  final String userCode;
+  final String partnerCode;
 
   const RelacionamentoStatusPage({
     super.key,
@@ -16,6 +21,8 @@ class RelacionamentoStatusPage extends StatefulWidget {
     required this.partnerFotoUrl,
     required this.partnerName,
     required this.relationshipDays,
+    required this.userCode,
+    required this.partnerCode,
   });
 
   @override
@@ -28,6 +35,10 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   late AnimationController _controller;
   double abaHeight = 0.0;
   int? hoveredCardIndex;
+  String? partnerMessage;
+  String? partnerPhotoBase64;
+  String? partnerDataInicio;
+  Timer? _updateTimer;
 
   List<Map<String, dynamic>> tasks = [
     {"emoji": "🍽️", "title": "Jantar romântico", "progress": 0, "goal": 1},
@@ -42,11 +53,46 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+    _fetchPartnerData();
+    // Configura o Timer para atualizar os dados a cada 10 segundos
+    _updateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        _fetchPartnerData();
+      }
+    });
+  }
+
+  Future<void> _fetchPartnerData() async {
+    try {
+      print('Fetching data for userCode: ${widget.userCode}, partnerCode: ${widget.partnerCode}');
+      final response = await http.post(
+        Uri.parse('${Config.baseUrl}/obter-relacionamento'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_code': widget.userCode,
+          'partner_code': widget.partnerCode,
+        }),
+      );
+
+      print('Response from /obter-relacionamento: ${response.body}');
+      final responseData = jsonDecode(response.body);
+      if (responseData['success'] == true) {
+        setState(() {
+          partnerMessage = responseData['mensagem'] as String? ?? '';
+          partnerPhotoBase64 = responseData['foto_base64'] as String? ?? '';
+          partnerDataInicio = responseData['data_inicio'] as String?;
+          print('Updated partnerMessage: $partnerMessage');
+        });
+      }
+    } catch (e) {
+      print('Erro ao buscar dados do parceiro: $e');
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _updateTimer?.cancel(); // Cancela o Timer para evitar vazamentos
     super.dispose();
   }
 
@@ -169,8 +215,8 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: hoveredCardIndex == index ? 12 : 8,
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: hoveredCardIndex == index ? 10 : 8,
                     offset: const Offset(2, 4),
                   ),
                 ],
@@ -299,6 +345,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                   visible: !isOpen,
                   child: Column(
                     children: [
+                      // 1. Data do relacionamento
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
@@ -306,7 +353,9 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          '${widget.relationshipDays} dias juntos',
+                          partnerDataInicio != null
+                              ? '${widget.relationshipDays} dias juntos'
+                              : 'Aguardando data de início',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
@@ -315,6 +364,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ),
                       ),
                       const SizedBox(height: 40),
+                      // 2. Fotos dos usuários
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -325,6 +375,50 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                           _buildUserAvatar(widget.partnerFotoUrl, widget.partnerName),
                         ],
                       ),
+                      const SizedBox(height: 30), // Aumentado para maior separação
+                      // 3. Mensagem do parceiro
+                      Align(
+                        alignment: Alignment.center,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: partnerMessage != null && partnerMessage!.isNotEmpty
+                              ? Text(
+                                  partnerMessage!,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.black87,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                )
+                              : const Text(
+                                  'No message from partner yet',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 30), // Aumentado para maior separação
+                      // 4. Nova foto do parceiro
+                      if (partnerPhotoBase64 != null && partnerPhotoBase64!.isNotEmpty)
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            width: 250, // Aumentado de 200 para 250
+                            height: 250, // Aumentado de 200 para 250
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15),
+                              image: DecorationImage(
+                                image: MemoryImage(base64Decode(partnerPhotoBase64!)),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -342,7 +436,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black26,
+                          color: Colors.black.withOpacity(0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -383,7 +477,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                     color: const Color(0xFFFF5C75),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

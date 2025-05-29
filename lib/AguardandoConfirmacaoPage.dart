@@ -1,4 +1,4 @@
-import 'dart:async'; // Import necessário para o Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:http/http.dart' as http;
@@ -29,23 +29,21 @@ class AguardandoConfirmacaoPage extends StatefulWidget {
 class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
   bool _isLoading = false;
   String _statusMessage = 'Aguardando confirmação do parceiro...';
-  Timer? _timer; // Timer para verificação periódica
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    // Inicia a verificação imediata
     _checkVinculoStatus();
-    // Configura o Timer para verificar a cada 3 segundos
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) { // Verifica se o widget ainda está montado
+      if (mounted) {
         _checkVinculoStatus();
       }
     });
   }
 
   Future<void> _checkVinculoStatus() async {
-    if (_isLoading) return; // Evita múltiplas requisições simultâneas
+    if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -69,9 +67,7 @@ class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
         });
 
         if (responseData['status'] == 'vinculado') {
-          // Para o Timer quando o vínculo é confirmado
           _timer?.cancel();
-          // Navega para a próxima tela
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -81,6 +77,8 @@ class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
                 partnerImageUrl: widget.partnerImageUrl,
                 partnerName: widget.partnerName,
                 relationshipDays: 0,
+                userCode: widget.userCode,
+                partnerCode: widget.partnerCode,
               ),
             ),
           );
@@ -103,7 +101,6 @@ class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
 
   @override
   void dispose() {
-    // Cancela o Timer quando a página é descartada
     _timer?.cancel();
     super.dispose();
   }
@@ -140,7 +137,7 @@ class _AguardandoConfirmacaoPageState extends State<AguardandoConfirmacaoPage> {
                 ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _isLoading ? null : _checkVinculoStatus, // Mantém o botão para verificação manual, se desejado
+                onPressed: _isLoading ? null : _checkVinculoStatus,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF5C75),
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),

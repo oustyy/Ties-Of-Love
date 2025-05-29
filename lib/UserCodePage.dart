@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_application_1/AguardandoConfirmacaoPage.dart';
 import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/config.dart'; // Certifique-se de que está importado
+import 'package:flutter_application_1/config.dart';
 
 class UserCodePage extends StatefulWidget {
   final String userCode;
@@ -79,7 +79,7 @@ class _UserCodePageState extends State<UserCodePage> {
 
     try {
       final response = await http.post(
-        Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'), // Use Config.baseUrl
+        Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_code': widget.userCode,
@@ -97,7 +97,7 @@ class _UserCodePageState extends State<UserCodePage> {
         });
 
         final vinculoResponse = await http.post(
-          Uri.parse('${Config.baseUrl}/solicitar-vinculo'), // Use Config.baseUrl
+          Uri.parse('${Config.baseUrl}/solicitar-vinculo'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'user_code': widget.userCode,
@@ -118,6 +118,8 @@ class _UserCodePageState extends State<UserCodePage> {
                   partnerImageUrl: _partnerFotoUrl ?? '',
                   partnerName: _partnerName ?? 'Parceria',
                   relationshipDays: 0,
+                  userCode: widget.userCode,
+                  partnerCode: partnerCode,
                 ),
               ),
             );

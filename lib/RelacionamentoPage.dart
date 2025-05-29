@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/RelacionamentoStatusPage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/config.dart';
 
 class RelacionamentoPage extends StatefulWidget {
   final String userImageUrl;
@@ -7,6 +11,8 @@ class RelacionamentoPage extends StatefulWidget {
   final String partnerImageUrl;
   final String partnerName;
   final int relationshipDays;
+  final String userCode;
+  final String partnerCode;
 
   const RelacionamentoPage({
     required this.userImageUrl,
@@ -14,6 +20,8 @@ class RelacionamentoPage extends StatefulWidget {
     required this.partnerImageUrl,
     required this.partnerName,
     required this.relationshipDays,
+    required this.userCode,
+    required this.partnerCode,
     super.key,
   });
 
@@ -23,28 +31,95 @@ class RelacionamentoPage extends StatefulWidget {
 
 class _RelacionamentoPageState extends State<RelacionamentoPage> {
   DateTime? dataInicioRelacionamento;
+  final TextEditingController mensagemController = TextEditingController();
+  String? _fotoBase64;
+  bool _isLoading = false;
 
-  final TextEditingController tempoController = TextEditingController();
-  final TextEditingController historiaController = TextEditingController();
-  final TextEditingController apelidoController = TextEditingController();
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      if (bytes != null) {
+        final base64Image = base64Encode(bytes);
+        setState(() {
+          _fotoBase64 = base64Image;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveRelationshipData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${Config.baseUrl}/atualizar-relacionamento'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_code': widget.userCode,
+          'partner_code': widget.partnerCode,
+          'data_inicio': dataInicioRelacionamento?.toIso8601String(),
+          'mensagem': mensagemController.text.trim(),
+          'foto_base64': _fotoBase64 ?? '',
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+      if (responseData['success'] == true) {
+        int diasRelacionamento = 0;
+        if (dataInicioRelacionamento != null) {
+          final hoje = DateTime.now();
+          diasRelacionamento = hoje.difference(dataInicioRelacionamento!).inDays;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RelacionamentoStatusPage(
+              userFotoUrl: widget.userImageUrl,
+              userName: widget.userName,
+              partnerFotoUrl: widget.partnerImageUrl,
+              partnerName: widget.partnerName,
+              relationshipDays: diasRelacionamento,
+              userCode: widget.userCode,
+              partnerCode: widget.partnerCode,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Erro ao salvar informações')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro de conexão com o servidor')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFE6F0), // Fundo rosa claro
+      backgroundColor: const Color(0xFFFFE6F0),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFCAC2), // Rosa escuro
-        
+        backgroundColor: const Color(0xFFFFCAC2),
         centerTitle: true,
         elevation: 0,
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
           children: [
             const SizedBox(height: 30),
-            // Data de início do relacionamento
             const Text(
               'Data de Início do Relacionamento',
               style: TextStyle(
@@ -89,9 +164,8 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
               ),
             ),
             const SizedBox(height: 30),
-            // História do casal
             const Text(
-              'Como vocês se conheceram?',
+              'Deixe uma mensagem',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -100,7 +174,7 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: historiaController,
+              controller: mensagemController,
               maxLines: 3,
               decoration: InputDecoration(
                 filled: true,
@@ -116,9 +190,8 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
               ),
             ),
             const SizedBox(height: 30),
-            // Apelido carinhoso
             const Text(
-              'Apelido carinhoso que usam entre si',
+              'Adicionar uma foto',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -126,47 +199,47 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
               ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: apelidoController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.grey.shade300),
+                  image: _fotoBase64 != null
+                      ? DecorationImage(
+                          image: MemoryImage(base64Decode(_fotoBase64!)),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 18,
-                  horizontal: 20,
-                ),
+                child: _fotoBase64 == null
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo,
+                            color: Colors.grey,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Selecionar foto',
+                            style: TextStyle(fontSize: 14, color: Colors.black87),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      )
+                    : null,
               ),
             ),
             const SizedBox(height: 40),
-            // Botão Confirmar
             ElevatedButton(
-              onPressed: () {
-                int diasRelacionamento = 0;
-                if (dataInicioRelacionamento != null) {
-                  final hoje = DateTime.now();
-                  diasRelacionamento =
-                      hoje.difference(dataInicioRelacionamento!).inDays;
-                }
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RelacionamentoStatusPage(
-                      userFotoUrl: widget.userImageUrl,
-                      userName: widget.userName,
-                      partnerFotoUrl: widget.partnerImageUrl,
-                      partnerName: widget.partnerName,
-                      relationshipDays: diasRelacionamento,
-                    ),
-                  ),
-                );
-              },
+              onPressed: _isLoading ? null : _saveRelationshipData,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF5C75), // Rosa escuro
+                backgroundColor: const Color(0xFFFF5C75),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 40,
                   vertical: 14,
@@ -176,14 +249,16 @@ class _RelacionamentoPageState extends State<RelacionamentoPage> {
                 ),
                 elevation: 5,
               ),
-              child: const Text(
-                'Confirmar',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Confirmar',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ],
         ),

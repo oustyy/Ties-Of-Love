@@ -81,7 +81,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
           partnerMessage = responseData['mensagem'] as String? ?? '';
           partnerPhotoBase64 = responseData['foto_base64'] as String? ?? '';
           partnerDataInicio = responseData['data_inicio'] as String?;
-          print('Updated partnerMessage: $partnerMessage');
+          print('Updated partnerMessage: $partnerMessage, partnerPhotoBase64: $partnerPhotoBase64');
         });
       }
     } catch (e) {
@@ -92,7 +92,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   @override
   void dispose() {
     _controller.dispose();
-    _updateTimer?.cancel(); // Cancela o Timer para evitar vazamentos
+    _updateTimer?.cancel();
     super.dispose();
   }
 
@@ -375,7 +375,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                           _buildUserAvatar(widget.partnerFotoUrl, widget.partnerName),
                         ],
                       ),
-                      const SizedBox(height: 30), // Aumentado para maior separação
+                      const SizedBox(height: 30),
                       // 3. Mensagem do parceiro
                       Align(
                         alignment: Alignment.center,
@@ -402,14 +402,14 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 30), // Aumentado para maior separação
-                      // 4. Nova foto do parceiro
+                      const SizedBox(height: 30),
+                      // 4. Nova foto do parceiro (relationship-specific photo)
                       if (partnerPhotoBase64 != null && partnerPhotoBase64!.isNotEmpty)
                         Align(
                           alignment: Alignment.center,
                           child: Container(
-                            width: 250, // Aumentado de 200 para 250
-                            height: 250, // Aumentado de 200 para 250
+                            width: 250,
+                            height: 250,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(15),
                               image: DecorationImage(

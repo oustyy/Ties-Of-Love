@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/UserCodePage.dart';
 import 'package:flutter_application_1/RelacionamentoPage.dart';
 import 'package:flutter_application_1/CriarContaPage.dart';
+import 'package:flutter_application_1/RelacionamentoStatusPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_application_1/config.dart';
@@ -60,14 +61,16 @@ class _LoginPageState extends State<LoginPage> {
         final userFotoUrl = responseData['foto_url'] as String? ?? '';
         final userName = responseData['nome'] as String? ?? 'Usuário';
         final partnerCode = responseData['codigo_parceiro'] as String? ?? '';
+        final hasRelationship = responseData['has_relationship'] as bool? ?? false;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Bem-vindo(a), $userName! Login realizado com sucesso')),
         );
 
         String partnerFotoUrl = '';
-        String partnerName = 'Parceria';
+        String partnerName = '';
 
+        // Fetch partner details if the user is vinculado
         if (statusVinculo == 'vinculado') {
           final partnerResponse = await http.post(
             Uri.parse('${Config.baseUrl}/verificar-codigo-parceiro'),
@@ -91,22 +94,41 @@ class _LoginPageState extends State<LoginPage> {
           }
         }
 
-        if (statusVinculo == 'vinculado') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RelacionamentoPage(
-                userImageUrl: userFotoUrl,
-                userName: userName,
-                partnerImageUrl: partnerFotoUrl,
-                partnerName: partnerName,
-                relationshipDays: 0,
-                userCode: userCode,
-                partnerCode: partnerCode,
-              ),
-            ),
+        if (statusVinculo == 'vinculado' && hasRelationship) {
+          // Usuário já vinculado e com relacionamento configurado, vai direto para RelacionamentoStatusPage
+          final relResponse = await http.post(
+            Uri.parse('${Config.baseUrl}/obter-relacionamento'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_code': userCode,
+              'partner_code': partnerCode,
+            }),
           );
+
+          if (relResponse.statusCode == 200) {
+            final relData = jsonDecode(relResponse.body);
+            if (relData['success'] == true) {
+              final dataInicio = relData['data_inicio'] != null ? DateTime.parse(relData['data_inicio']) : null;
+              final relationshipDays = dataInicio != null ? DateTime.now().difference(dataInicio).inDays : 0;
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RelacionamentoStatusPage(
+                    userFotoUrl: userFotoUrl,
+                    userName: userName,
+                    partnerFotoUrl: partnerFotoUrl, // Partner's profile photo
+                    partnerName: partnerName, // Partner's actual name
+                    relationshipDays: relationshipDays,
+                    userCode: userCode,
+                    partnerCode: partnerCode,
+                  ),
+                ),
+              );
+            }
+          }
         } else {
+          // Usuário novo ou não vinculado, segue o fluxo normal
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(

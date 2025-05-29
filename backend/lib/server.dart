@@ -190,7 +190,15 @@ void main() async {
           'foto_url': user[7] as String,
           'codigo_parceiro': user[5] as String?,
         };
-        print('Login successful - User data: $userData');
+
+        // Verifica se já existe relacionamento configurado
+        final relResult = await db.query(
+          'SELECT COUNT(*) FROM relacionamentos WHERE user_code = @user_code OR partner_code = @user_code',
+          substitutionValues: {'user_code': userData['codigo_usuario']},
+        );
+        final hasRelationship = (relResult.first[0] as int) > 0;
+
+        print('Login successful - User data: $userData, hasRelationship: $hasRelationship');
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -201,6 +209,7 @@ void main() async {
             'nome': userData['nome'],
             'id': userData['id'],
             'codigo_parceiro': userData['codigo_parceiro'],
+            'has_relationship': hasRelationship,
           }),
           headers: {'Content-Type': 'application/json'},
         );
@@ -353,6 +362,55 @@ void main() async {
         );
       }
 
+      // Verifica se o usuário já está vinculado
+      final userResult = await db.query(
+        'SELECT codigo_parceiro, status_vinculo FROM usuarios WHERE codigo_usuario = @user_code',
+        substitutionValues: {'user_code': userCode},
+      );
+
+      if (userResult.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Usuário não encontrado'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final user = userResult.first;
+      final currentPartnerCode = user[0] as String?;
+      final currentStatus = user[1] as String;
+
+      if (currentStatus == 'vinculado' && currentPartnerCode != null) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Usuário já está vinculado a outro parceiro'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Verifica se o parceiro existe
+      final partnerResult = await db.query(
+        'SELECT codigo_parceiro, status_vinculo FROM usuarios WHERE codigo_usuario = @partner_code',
+        substitutionValues: {'partner_code': partnerCode},
+      );
+
+      if (partnerResult.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Parceiro não encontrado'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final partner = partnerResult.first;
+      final partnerCurrentPartnerCode = partner[0] as String?;
+      final partnerStatus = partner[1] as String;
+
+      if (partnerStatus == 'vinculado' && partnerCurrentPartnerCode != null) {
+        return Response.badRequest(
+          body: jsonEncode({'success': false, 'message': 'Parceiro já está vinculado a outro usuário'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // Atualiza o status do usuário iniciador para 'pendente'
       await db.query(
         'UPDATE usuarios SET codigo_parceiro = @partner_code, status_vinculo = @status WHERE codigo_usuario = @user_code',
         substitutionValues: {
@@ -362,27 +420,9 @@ void main() async {
         },
       );
 
-      final userResult = await db.query(
-        'SELECT * FROM usuarios WHERE codigo_usuario = @user_code',
-        substitutionValues: {'user_code': userCode},
-      );
-
-      final partnerResult = await db.query(
-        'SELECT * FROM usuarios WHERE codigo_usuario = @partner_code',
-        substitutionValues: {'partner_code': partnerCode},
-      );
-
-      if (userResult.isEmpty || partnerResult.isEmpty) {
-        return Response.badRequest(
-          body: jsonEncode({'success': false, 'message': 'Usuário ou parceiro não encontrado'}),
-          headers: {'Content-Type': 'application/json'},
-        );
-      }
-
-      final user = userResult.first;
-      final partner = partnerResult.first;
-
-      if (user[5] == partnerCode && partner[5] == userCode) {
+      // Verifica se o parceiro já enviou uma solicitação de vínculo
+      if (partnerCurrentPartnerCode == userCode) {
+        // Ambos os usuários confirmaram, atualiza para 'vinculado'
         await db.query(
           'UPDATE usuarios SET status_vinculo = @status WHERE codigo_usuario IN (@user_code, @partner_code)',
           substitutionValues: {
@@ -400,6 +440,7 @@ void main() async {
           headers: {'Content-Type': 'application/json'},
         );
       } else {
+        // Aguarda confirmação do parceiro
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -511,9 +552,9 @@ void main() async {
         );
       }
 
-      // Busca as informações do relacionamento do parceiro
+      // Busca as informações do relacionamento definidas pelo parceiro
       final result = await db.query(
-        'SELECT data_inicio, mensagem, foto_base64 FROM relacionamentos WHERE (user_code = @user_code AND partner_code = @partner_code) OR (user_code = @partner_code AND partner_code = @user_code)',
+        'SELECT data_inicio, mensagem, foto_base64 FROM relacionamentos WHERE user_code = @partner_code AND partner_code = @user_code',
         substitutionValues: {
           'user_code': userCode,
           'partner_code': partnerCode,
@@ -523,11 +564,7 @@ void main() async {
       print('Query result for user_code: $userCode, partner_code: $partnerCode: $result');
 
       if (result.isNotEmpty) {
-        // Find the record where user_code is the partner's code
-        final partnerRecord = result.firstWhere(
-          (row) => row.toColumnMap()['user_code'] == partnerCode,
-          orElse: () => result.first,
-        );
+        final partnerRecord = result.first;
         return Response.ok(
           jsonEncode({
             'success': true,
@@ -538,6 +575,7 @@ void main() async {
           headers: {'Content-Type': 'application/json'},
         );
       } else {
+        // Se não houver dados do parceiro, retorna dados vazios
         return Response.ok(
           jsonEncode({
             'success': true,

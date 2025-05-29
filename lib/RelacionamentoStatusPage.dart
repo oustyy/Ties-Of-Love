@@ -39,11 +39,33 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   String? partnerPhotoBase64;
   String? partnerDataInicio;
   Timer? _updateTimer;
+  Timer? _refreshTimer;
+  bool _showTimer = false;
+  int _remainingSeconds = 300; // 5 minutes in seconds
+  int _completedTaskSets = 0; // Counter for completed sets of 4 tasks
+  String _currentPetImage = 'assets/images/pet1.png'; // Initial pet image
 
-  List<Map<String, dynamic>> tasks = [
+  List<Map<String, dynamic>> tasks = [];
+  List<Map<String, dynamic>> allTasks = [
     {"emoji": "🍽️", "title": "Jantar romântico", "progress": 0, "goal": 1},
     {"emoji": "💋", "title": "Beije o cônjuge", "progress": 0, "goal": 5},
     {"emoji": "🎁", "title": "Presente surpresa", "progress": 0, "goal": 1},
+    {"emoji": "🌹", "title": "Mandar mensagem fofa", "progress": 0, "goal": 1},
+    {"emoji": "🎶", "title": "Ouvir música juntos", "progress": 0, "goal": 1},
+    {"emoji": "📝", "title": "Escrever uma carta", "progress": 0, "goal": 1},
+    {"emoji": "📸", "title": "Tirar uma foto juntos", "progress": 0, "goal": 1},
+    {"emoji": "🍿", "title": "Assistir um filme", "progress": 0, "goal": 1},
+    {"emoji": "🎉", "title": "Planejar um encontro", "progress": 0, "goal": 1},
+    {"emoji": "🌟", "title": "Planeje um encontro", "progress": 0, "goal": 1},
+    {"emoji": "💃", "title": "Dança a dois", "progress": 0, "goal": 1},
+    {"emoji": "📷", "title": "Tire uma selfie engraçada", "progress": 0, "goal": 3},
+    {"emoji": "🎵", "title": "Façam uma playlist juntos", "progress": 0, "goal": 1},
+    {"emoji": "🎲", "title": "Jogue um jogo em dupla", "progress": 0, "goal": 1},
+    {"emoji": "🍳", "title": "Cozinhe algo novo juntos", "progress": 0, "goal": 1},
+    {"emoji": "🎨", "title": "Faça um desenho do outro", "progress": 0, "goal": 1},
+    {"emoji": "🥐", "title": "Prepare um café da manhã especial", "progress": 0, "goal": 1},
+    {"emoji": "🎬", "title": "Assista a um filme clássico juntos", "progress": 0, "goal": 1},
+    {"emoji": "🏃‍♂️", "title": "Corra uma pequena distância juntos", "progress": 0, "goal": 1},
   ];
 
   @override
@@ -54,11 +76,17 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
       duration: const Duration(milliseconds: 250),
     );
     _fetchPartnerData();
-    // Configura o Timer para atualizar os dados a cada 10 segundos
     _updateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (mounted) {
         _fetchPartnerData();
       }
+    });
+    _loadInitialTasks();
+  }
+
+  void _loadInitialTasks() {
+    setState(() {
+      tasks = _generateNewTasks();
     });
   }
 
@@ -93,6 +121,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   void dispose() {
     _controller.dispose();
     _updateTimer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -110,38 +139,83 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   }
 
   List<Map<String, dynamic>> _generateNewTasks() {
-    List<Map<String, dynamic>> novas = [
-      {"emoji": "🌹", "title": "Mandar mensagem fofa", "progress": 0, "goal": 1},
-      {"emoji": "🎶", "title": "Ouvir música juntos", "progress": 0, "goal": 1},
-      {"emoji": "📝", "title": "Escrever uma carta", "progress": 0, "goal": 1},
-      {"emoji": "📸", "title": "Tirar uma foto juntos", "progress": 0, "goal": 1},
-      {"emoji": "🍿", "title": "Assistir um filme", "progress": 0, "goal": 1},
-      {"emoji": "🎉", "title": "Planejar um encontro", "progress": 0, "goal": 1},
-    ];
-    novas.shuffle();
-    return novas.take(3).toList();
+    List<Map<String, dynamic>> shuffledTasks = List.from(allTasks);
+    shuffledTasks.shuffle();
+    return shuffledTasks.take(4).map((task) {
+      return {
+        "emoji": task["emoji"],
+        "title": task["title"],
+        "progress": 0,
+        "goal": task["goal"],
+      };
+    }).toList();
+  }
+
+  void _startRefreshTimer() {
+    setState(() {
+      _showTimer = true;
+      _remainingSeconds = 300; // 5 minutes
+    });
+
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _remainingSeconds--;
+        if (_remainingSeconds <= 0) {
+          _refreshTimer?.cancel();
+          _showTimer = false;
+          tasks = _generateNewTasks();
+        }
+      });
+    });
+  }
+
+  void _updatePetImage() {
+    setState(() {
+      if (_completedTaskSets == 0) {
+        _currentPetImage = 'assets/images/pet1.png';
+      } else if (_completedTaskSets == 1) {
+        _currentPetImage = 'assets/images/pet2.png';
+      } else if (_completedTaskSets >= 2) {
+        _currentPetImage = 'assets/images/pet3.png';
+      }
+      print('Current pet image set to: $_currentPetImage'); // Debug print
+    });
   }
 
   Color _getBackgroundColor(String emoji) {
     switch (emoji) {
       case "🍽️":
+      case "🍳":
+      case "🥐":
         return Colors.brown.shade100;
       case "💋":
+      case "🌹":
         return Colors.red.shade100;
       case "🎁":
         return Colors.blue.shade100;
-      case "🌹":
-        return Colors.pink.shade100;
       case "🎶":
+      case "🎵":
         return Colors.purple.shade100;
       case "📝":
         return Colors.yellow.shade100;
       case "📸":
+      case "📷":
         return Colors.grey.shade100;
       case "🍿":
+      case "🎬":
         return Colors.orange.shade100;
       case "🎉":
+      case "🌟":
         return Colors.green.shade100;
+      case "💃":
+        return Colors.pink.shade100;
+      case "🎲":
+        return Colors.teal.shade100;
+      case "🎨":
+        return Colors.indigo.shade100;
+      case "🏃‍♂️":
+        return Colors.amber.shade100;
       default:
         return Colors.white;
     }
@@ -208,7 +282,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.pink.shade100,
+                    _getBackgroundColor(task["emoji"]),
                     Colors.purple.shade100,
                   ],
                 ),
@@ -285,7 +359,9 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                                         setState(() {
                                           tasks.removeAt(index);
                                           if (tasks.isEmpty) {
-                                            tasks.addAll(_generateNewTasks());
+                                            _completedTaskSets++;
+                                            _updatePetImage();
+                                            _startRefreshTimer();
                                           }
                                         });
                                       });
@@ -345,7 +421,6 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                   visible: !isOpen,
                   child: Column(
                     children: [
-                      // 1. Data do relacionamento
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
@@ -364,7 +439,6 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ),
                       ),
                       const SizedBox(height: 40),
-                      // 2. Fotos dos usuários
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -376,7 +450,6 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ],
                       ),
                       const SizedBox(height: 30),
-                      // 3. Mensagem do parceiro
                       Align(
                         alignment: Alignment.center,
                         child: Padding(
@@ -403,7 +476,6 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ),
                       ),
                       const SizedBox(height: 30),
-                      // 4. Nova foto do parceiro (relationship-specific photo)
                       if (partnerPhotoBase64 != null && partnerPhotoBase64!.isNotEmpty)
                         Align(
                           alignment: Alignment.center,
@@ -430,8 +502,8 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
-                      image: const DecorationImage(
-                        image: AssetImage('assets/imagem_quests.png'),
+                      image: DecorationImage(
+                        image: AssetImage(_currentPetImage),
                         fit: BoxFit.cover,
                       ),
                       boxShadow: [
@@ -442,6 +514,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         ),
                       ],
                     ),
+                    child: _currentPetImage.contains('pet') ? null : const Icon(Icons.error, size: 50, color: Colors.red), // Fallback
                   ),
                 const Spacer(),
               ],
@@ -455,11 +528,29 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                 borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
               padding: const EdgeInsets.all(20),
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                itemCount: tasks.length,
-                itemBuilder: (context, index) => _buildTaskCard(tasks[index], index),
+              child: Column(
+                children: [
+                  if (_showTimer)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        'Novas tarefas em: ${_remainingSeconds ~/ 60}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) => _buildTaskCard(tasks[index], index),
+                    ),
+                  ),
+                ],
               ),
             ),
             Positioned(

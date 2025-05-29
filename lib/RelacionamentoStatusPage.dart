@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class RelacionamentoStatusPage extends StatefulWidget {
   final String userFotoUrl;
@@ -27,21 +27,30 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
   bool isOpen = false;
   late AnimationController _controller;
   double abaHeight = 0.0;
+  int? hoveredCardIndex;
 
   List<Map<String, dynamic>> tasks = [
-    {"emoji": "🍽", "title": "Jantar romântico", "progress": 0, "goal": 1},
-    {"emoji": "💋", "title": "Beije o cônjuge", "progress": 3, "goal": 5},
+    {"emoji": "🍽️", "title": "Jantar romântico", "progress": 0, "goal": 1},
+    {"emoji": "💋", "title": "Beije o cônjuge", "progress": 0, "goal": 5},
     {"emoji": "🎁", "title": "Presente surpresa", "progress": 0, "goal": 1},
   ];
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
   }
 
-  void animateFAB() {
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleFAB() {
     setState(() {
       if (!isOpen) {
         _controller.forward();
@@ -54,13 +63,76 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
     });
   }
 
-  Widget _taskCard(Map<String, dynamic> task, int index) {
+  List<Map<String, dynamic>> _generateNewTasks() {
+    List<Map<String, dynamic>> novas = [
+      {"emoji": "🌹", "title": "Mandar mensagem fofa", "progress": 0, "goal": 1},
+      {"emoji": "🎶", "title": "Ouvir música juntos", "progress": 0, "goal": 1},
+      {"emoji": "📝", "title": "Escrever uma carta", "progress": 0, "goal": 1},
+      {"emoji": "📸", "title": "Tirar uma foto juntos", "progress": 0, "goal": 1},
+      {"emoji": "🍿", "title": "Assistir um filme", "progress": 0, "goal": 1},
+      {"emoji": "🎉", "title": "Planejar um encontro", "progress": 0, "goal": 1},
+    ];
+    novas.shuffle();
+    return novas.take(3).toList();
+  }
+
+  Color _getBackgroundColor(String emoji) {
+    switch (emoji) {
+      case "🍽️":
+        return Colors.brown.shade100;
+      case "💋":
+        return Colors.red.shade100;
+      case "🎁":
+        return Colors.blue.shade100;
+      case "🌹":
+        return Colors.pink.shade100;
+      case "🎶":
+        return Colors.purple.shade100;
+      case "📝":
+        return Colors.yellow.shade100;
+      case "📸":
+        return Colors.grey.shade100;
+      case "🍿":
+        return Colors.orange.shade100;
+      case "🎉":
+        return Colors.green.shade100;
+      default:
+        return Colors.white;
+    }
+  }
+
+  Widget _buildUserAvatar(String fotoUrl, String name) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 50,
+          backgroundImage: fotoUrl.isNotEmpty ? MemoryImage(base64Decode(fotoUrl)) : null,
+          backgroundColor: Colors.white,
+          child: fotoUrl.isEmpty ? const Icon(Icons.person, size: 40, color: Colors.grey) : null,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'DancingScript',
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCard(Map<String, dynamic> task, int index) {
     final completed = task["progress"] >= task["goal"];
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth > 600 ? 220.0 : screenWidth * 0.5;
 
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(0, 0.1),
-        end: Offset.zero,
+        begin: const Offset(-1.5, 0),
+        end: const Offset(0, 0),
       ).animate(
         CurvedAnimation(
           parent: _controller,
@@ -72,103 +144,144 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
           parent: _controller,
           curve: Interval(0.1 * index, 0.6 + 0.1 * index, curve: Curves.easeIn),
         ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Text(task["emoji"], style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task["title"],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: task["progress"] / task["goal"],
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-                      minHeight: 6,
-                    ),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => hoveredCardIndex = index),
+          onExit: (_) => setState(() => hoveredCardIndex = null),
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => hoveredCardIndex = index),
+            onTapUp: (_) => setState(() => hoveredCardIndex = null),
+            onTapCancel: () => setState(() => hoveredCardIndex = null),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              transform: Matrix4.identity()..scale(hoveredCardIndex == index ? 1.05 : 1.0),
+              margin: const EdgeInsets.only(right: 16),
+              width: cardWidth,
+              height: cardWidth * 1.3,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.pink.shade100,
+                    Colors.purple.shade100,
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    color: Colors.pink,
-                    onPressed: () {
-                      setState(() {
-                        if (task["progress"] > 0) task["progress"]--;
-                      });
-                    },
-                  ),
-                  Text(
-                    "${task["progress"]}/${task["goal"]}",
-                    style: TextStyle(
-                      color: completed ? Colors.green : Colors.black54,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                        completed ? Icons.check_circle : Icons.add_circle_outline),
-                    color: completed ? Colors.green : Colors.pink,
-                    onPressed: () {
-                      setState(() {
-                        if (task["progress"] < task["goal"]) {
-                          task["progress"]++;
-                          // se completou, remove e adiciona nova
-                          if (task["progress"] >= task["goal"]) {
-                            Future.delayed(const Duration(milliseconds: 300), () {
-                              setState(() {
-                                tasks.removeAt(index);
-                                if (tasks.length < 3) {
-                                  tasks.add(_generateNewTask());
-                                }
-                              });
-                            });
-                          }
-                        }
-                      });
-                    },
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: hoveredCardIndex == index ? 12 : 8,
+                    offset: const Offset(2, 4),
                   ),
                 ],
               ),
-            ],
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              task["emoji"],
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            Text(
+                              task["emoji"],
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          task["title"],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(
+                          value: task["progress"] / task["goal"],
+                          backgroundColor: Colors.white.withOpacity(0.5),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.pink),
+                          minHeight: 8,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${task["progress"]}/${task["goal"]}",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: completed ? Colors.green : Colors.black54,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                completed ? Icons.check_circle : Icons.add_circle_outline,
+                                size: 24,
+                              ),
+                              color: completed ? Colors.green : Colors.pink,
+                              onPressed: () {
+                                setState(() {
+                                  if (task["progress"] < task["goal"]) {
+                                    task["progress"]++;
+                                    if (task["progress"] >= task["goal"]) {
+                                      Future.delayed(const Duration(milliseconds: 300), () {
+                                        setState(() {
+                                          tasks.removeAt(index);
+                                          if (tasks.isEmpty) {
+                                            tasks.addAll(_generateNewTasks());
+                                          }
+                                        });
+                                      });
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Transform.rotate(
+                      angle: pi / 2,
+                      child: Text(
+                        task["emoji"],
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Transform.rotate(
+                      angle: -pi / 2,
+                      child: Text(
+                        task["emoji"],
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
-  }
-
-  Map<String, dynamic> _generateNewTask() {
-    List<Map<String, dynamic>> novas = [
-      {"emoji": "🌹", "title": "Mandar mensagem fofa", "progress": 0, "goal": 1},
-      {"emoji": "🎶", "title": "Ouvir música juntos", "progress": 0, "goal": 1},
-      {"emoji": "📝", "title": "Escrever uma carta", "progress": 0, "goal": 1},
-    ];
-    novas.shuffle();
-    return novas.first;
   }
 
   @override
@@ -187,8 +300,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFA0B0),
                           borderRadius: BorderRadius.circular(30),
@@ -196,67 +308,21 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                         child: Text(
                           '${widget.relationshipDays} dias juntos',
                           style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundImage: widget.userFotoUrl.isNotEmpty
-                                    ? MemoryImage(base64Decode(widget.userFotoUrl))
-                                    : null,
-                                backgroundColor: Colors.white,
-                                child: widget.userFotoUrl.isEmpty
-                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                                    : null,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                widget.userName,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: 'DancingScript',
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                          _buildUserAvatar(widget.userFotoUrl, widget.userName),
                           const SizedBox(width: 16),
-                          const Icon(Icons.favorite,
-                              color: Color(0xFFFF5C75), size: 32),
+                          const Icon(Icons.favorite, color: Color(0xFFFF5C75), size: 32),
                           const SizedBox(width: 16),
-                          Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundImage: widget.partnerFotoUrl.isNotEmpty
-                                    ? MemoryImage(base64Decode(widget.partnerFotoUrl))
-                                    : null,
-                                backgroundColor: Colors.white,
-                                child: widget.partnerFotoUrl.isEmpty
-                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                                    : null,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                widget.partnerName,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: 'DancingScript',
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                          _buildUserAvatar(widget.partnerFotoUrl, widget.partnerName),
                         ],
                       ),
                     ],
@@ -297,9 +363,9 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
               padding: const EdgeInsets.all(20),
               child: ListView.builder(
                 physics: const BouncingScrollPhysics(),
+                scrollDirection: Axis.horizontal,
                 itemCount: tasks.length,
-                itemBuilder: (context, index) =>
-                    _taskCard(tasks[index], index),
+                itemBuilder: (context, index) => _buildTaskCard(tasks[index], index),
               ),
             ),
             Positioned(
@@ -307,7 +373,7 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
               left: 0,
               right: 0,
               child: GestureDetector(
-                onTap: animateFAB,
+                onTap: _toggleFAB,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   height: 70,
@@ -317,9 +383,10 @@ class _RelacionamentoStatusPageState extends State<RelacionamentoStatusPage>
                     color: const Color(0xFFFF5C75),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: const Offset(0, 4))
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: const Icon(Icons.favorite, color: Colors.white, size: 36),

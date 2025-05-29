@@ -214,7 +214,6 @@ void main() async {
       }
 
       if (partnerCode == null || partnerCode.isEmpty) {
-        // Buscar o partner_code associado ao user_code
         final userResult = await db.query(
           'SELECT codigo_parceiro, status_vinculo FROM usuarios WHERE codigo_usuario = @user_code',
           substitutionValues: {'user_code': userCode},
@@ -238,7 +237,6 @@ void main() async {
           );
         }
 
-        // Buscar dados do parceiro usando o storedPartnerCode
         final partnerResult = await db.query(
           'SELECT id, nome, foto_url FROM usuarios WHERE codigo_usuario = @partner_code',
           substitutionValues: {'partner_code': storedPartnerCode},
@@ -258,20 +256,19 @@ void main() async {
           'foto_url': partner[2],
         };
 
-        print('Partner data returned: $partnerData'); // Log para depuração
+        print('Partner data returned: $partnerData');
         return Response.ok(
           jsonEncode({
             'success': true,
             'message': 'Parceiro encontrado',
             'partner_id': partnerData['id'],
-            'nome': partnerData['nome'], // Retorna o nome do parceiro
+            'nome': partnerData['nome'],
             'foto_url': partnerData['foto_url'],
           }),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      // Código existente para quando o partner_code é fornecido
       final partnerResult = await db.query(
         'SELECT id, nome, foto_url FROM usuarios WHERE codigo_usuario = @partner_code',
         substitutionValues: {'partner_code': partnerCode},
@@ -298,13 +295,13 @@ void main() async {
         );
       }
 
-      print('Partner data returned: $partnerData'); // Log para depuração
+      print('Partner data returned: $partnerData');
       return Response.ok(
         jsonEncode({
           'success': true,
           'message': 'Código do parceiro válido',
           'partner_id': partnerData['id'],
-          'nome': partnerData['nome'], // Retorna o nome do parceiro
+          'nome': partnerData['nome'],
           'foto_url': partnerData['foto_url'],
         }),
         headers: {'Content-Type': 'application/json'},
@@ -399,15 +396,14 @@ void main() async {
     }
   });
 
-  // Middleware CORS
   final handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(_corsMiddleware)
       .addHandler(router);
 
   try {
-    final server = await shelf_io.serve(handler, 'localhost', 8080);
-    print('Server running on localhost:${server.port}');
+    final server = await shelf_io.serve(handler, '0.0.0.0', 8080); // Ouve em todas as interfaces
+    print('Server running on 0.0.0.0:${server.port}');
   } catch (e) {
     print('Error starting server: $e');
   }
